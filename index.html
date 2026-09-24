@@ -8,8 +8,8 @@
         :root { --primary: #004d99; --secondary: #0073e6; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 0; }
         header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; gap: 10px;}
-        .logo-icon { width: 40px; height: 40px; background: white; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .logo { font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px;}
+        .logo-icon { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
         nav button { background: transparent; border: 1px solid white; color: white; padding: 8px 15px; margin-left: 10px; border-radius: 5px; cursor: pointer; }
         nav button:hover { background: white; color: var(--primary); }
         .container { max-width: 800px; margin: 30px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -21,7 +21,7 @@
         .form-group.full { grid-column: 1 / -1; }
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
-        .btn { padding: 12px 20px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn { padding: 12px 20px; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-success { background: #28a745; color: white; }
         .btn-secondary { background: #6c757d; color: white; }
@@ -41,13 +41,28 @@
         .success { color: green; } .error { color: red; }
         .whatsapp-box { background: #dcf8c6; border: 1px solid #25D366; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;}
         .whatsapp-box a { color: #128C7E; font-weight: bold; text-decoration: none; font-size: 18px; }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .container { margin: 10px; padding: 15px; }
+            header { flex-direction: column; gap: 10px; text-align: center; }
+            nav { display: flex; gap: 10px; width: 100%; }
+            nav button { margin: 0; flex: 1; }
+            .filters { flex-direction: column; }
+            .filters input, .filters select, .filters button { width: 100%; }
+            table { display: block; overflow-x: auto; white-space: nowrap; }
+            .id-card { width: 100%; max-width: 280px; }
+        }
     </style>
 </head>
 <body>
 
 <header>
     <div class="logo">
-        <div class="logo-icon">T</div> TOMSTUDIO TECH ACADEMY
+        <!-- REPLACE THE SRC BELOW WITH YOUR ACTUAL LOGO IMAGE URL -->
+        <img src="logo.png" alt="TSTA Logo" class="logo-icon">
+        <span>TOMSTUDIO TECH ACADEMY</span>
     </div>
     <nav>
         <button onclick="showView('form')">Register</button>
@@ -78,19 +93,13 @@
             </div>
             <div class="form-group"><label>Registrar / Staff Role</label>
                 <select id="registrarRole" required>
-                    <option>Registrar</option>
-                    <option>Manager</option>
-                    <option>Coordinator</option>
-                    <option>Secretary</option>
-                    <option>Asst. Secretary</option>
-                    <option>Field Staff</option>
-                    <option>Director</option>
-                    <option>Other</option>
+                    <option>Registrar</option><option>Manager</option><option>Coordinator</option>
+                    <option>Secretary</option><option>Asst. Secretary</option><option>Field Staff</option>
+                    <option>Director</option><option>Other</option>
                 </select>
             </div>
         </div>
 
-        <!-- GENERAL FIELDS (Hidden for TIS) -->
         <div id="generalFields">
             <h3>Personal Information</h3>
             <div class="form-grid">
@@ -109,7 +118,6 @@
             </div>
         </div>
 
-        <!-- TIS SPECIFIC FIELDS (Hidden for General) -->
         <div id="tisFields" class="hidden">
             <h3>Student Information (Tech in Schools)</h3>
             <div class="form-grid">
@@ -128,8 +136,8 @@
             <div class="form-group"><label>Course Applied For</label>
                 <select id="course" required>
                     <option>ICT Fundamentals</option><option>Digital Literacy</option><option>Graphics Design</option>
-                    <option>Coding/Web Dev</option><option>Photography</option><option>Video Editing</option>
-                    <option>AutoCAD</option><option>Animation</option><option>Revit Architecture</option><option>Scratch Coding</option>
+                    <option>Coding/Web Dev</option><option>Photography</option><option>Video Editing</option><option>Data Analysis</option><option>Digital Marketting</option>
+                    <option>AutoCAD</option><option>Animation</option><option>Revit Architecture</option><option>Scratch Coding</option><option>UI/UX</option><option>Cyber Security</option><option>Other/Special</option>
                 </select>
             </div>
             <div class="form-group"><label>Training Duration</label><input type="text" id="duration" placeholder="e.g., 3 Months" required></div>
@@ -138,12 +146,8 @@
                 <label>How did you hear about us?</label>
                 <select id="source" required>
                     <option value="">-- Select Option --</option>
-                    <option>Referral</option>
-                    <option>Flyer</option>
-                    <option>Banners</option>
-                    <option>Past Students</option>
-                    <option>Social Media</option>
-                    <option>Other</option>
+                    <option>Referral</option><option>Flyer</option><option>Banners</option>
+                    <option>Past Students</option><option>Social Media</option><option>Other</option>
                 </select>
             </div>
         </div>
@@ -160,15 +164,13 @@
             <div class="form-group" id="paymentMethodGroup">
                 <label>Payment Method</label>
                 <select id="paymentMethod" required>
-                    <option>Cash</option>
-                    <option>Transfer (TRF)</option>
+                    <option>Cash</option><option>Transfer (TRF)</option>
                 </select>
             </div>
             <div class="form-group"><label>Amount Paid Now (₦)</label><input type="number" id="amountPaid" required></div>
             <div class="form-group" id="passportGroup"><label>Passport Photo (Optional)</label><input type="file" id="passport" accept="image/*"></div>
         </div>
 
-        <!-- GENERAL GUARDIAN FIELDS -->
         <div id="generalGuardian">
             <h3>Emergency Contact (Guardian)</h3>
             <div class="form-grid">
@@ -209,7 +211,7 @@
 <!-- VIEW 3: ADMIN LOGIN -->
 <div id="view-admin-login" class="container hidden" style="max-width: 400px; text-align: center;">
     <h2>Admin Portal</h2>
-    <input type="password" id="adminPass" placeholder="Enter Password" style="text-align: center;">
+    <input type="password" id="adminPass" placeholder="Enter Password" style="text-align: center; margin-bottom: 15px;">
     <button class="btn btn-primary" onclick="adminLogin()">Login</button>
     <p id="loginMsg" class="error"></p>
 </div>
@@ -224,13 +226,10 @@
             <option value="TechInChurches">Tech in Churches</option>
         </select>
         <input type="text" id="filterName" placeholder="Search by Name...">
-        <!-- SYNCED WITH FORM BRANCH OPTIONS -->
         <select id="filterBranch">
             <option value="">All Branches</option>
-            <option>Main Hub (Isawo Road)</option>
-            <option>Branch 2 (IGB)</option>
-            <option>Branch 3</option>
-            <option>Online/Virtual</option>
+            <option>Main Hub (Isawo Road)</option><option>Branch 2 (IGB)</option>
+            <option>Branch 3</option><option>Online/Virtual</option>
         </select>
         <button class="btn btn-primary" onclick="loadStudents()">Filter</button>
         <button class="btn btn-secondary" onclick="showView('form')">Logout</button>
@@ -239,17 +238,16 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec'; // REPLACE THIS
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec';
     const ADMIN_PASSWORD = 'TSTA2024'; 
-    const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/E43TEvdrbua4jStVH8uBse'; // REPLACE WITH ACTUAL LINK
+    const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/E43TEvdrbua4jStVH8uBse';
 
-    // NAVIGATION
     function showView(viewName) {
         document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
         document.getElementById(`view-${viewName}`).classList.remove('hidden');
+        window.scrollTo(0, 0);
     }
 
-    // DYNAMIC FORM MODE (TIS vs General)
     function toggleFormMode() {
         const channel = document.getElementById('channel').value;
         const isTIS = channel === 'Tech in Schools';
@@ -260,7 +258,6 @@
         document.getElementById('batchGroup').classList.toggle('hidden', isTIS);
         document.getElementById('sourceGroup').classList.toggle('hidden', isTIS);
         document.getElementById('agreedPayGroup').classList.toggle('hidden', isTIS);
-        // NOTE: Passport is now visible for BOTH General and TIS
         
         const payOption = document.getElementById('payOption');
         const payLabel = document.getElementById('payOptionLabel');
@@ -269,7 +266,7 @@
         if (isTIS) {
             payLabel.innerText = 'Payment Frequency';
             payOption.innerHTML = `<option>Daily</option><option>Weekly</option><option>Monthly</option><option>Termly</option><option>Per Academic Session</option><option>Yearly</option>`;
-            payMethodGroup.classList.add('hidden'); // Hide TRF/Cash for TIS if not needed, or remove this line to keep it
+            payMethodGroup.classList.add('hidden');
         } else {
             payLabel.innerText = 'Payment Option';
             payOption.innerHTML = `<option>One-Time</option><option>Installment (Max 2)</option>`;
@@ -277,7 +274,6 @@
         }
     }
 
-    // AGE LOGIC
     document.getElementById('dob').addEventListener('change', function() {
         const age = calculateAge(this.value);
         const group = document.getElementById('guardianEmailGroup');
@@ -294,7 +290,6 @@
         return age;
     }
 
-    // PREVIEW LOGIC
     function showPreview() {
         if (!document.getElementById('regForm').checkValidity()) { document.getElementById('regForm').reportValidity(); return; }
         
@@ -337,13 +332,27 @@
         showView('preview');
     }
 
-    // SUBMIT LOGIC
     async function submitForm() {
         const isTIS = document.getElementById('channel').value === 'Tech in Schools';
         if (!isTIS && !document.getElementById('agreePolicy').checked) { alert('You must agree to the Student Policy.'); return; }
         
         const btn = document.getElementById('submitBtn'); const msg = document.getElementById('message');
-        btn.disabled = true; btn.innerText = 'Submitting...'; msg.innerText = '';
+        btn.disabled = true; btn.innerText = 'Submitting to Drive & Sheet...'; msg.innerText = '';
+
+        // Convert Passport to Base64 for Google Drive Upload
+        const fileInput = document.getElementById('passport');
+        let passportBase64 = '';
+        let passportName = 'None';
+        
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            passportName = file.name;
+            passportBase64 = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]); // Strip "data:image/jpeg;base64,"
+                reader.readAsDataURL(file);
+            });
+        }
 
         const formData = {
             channel: document.getElementById('channel').value,
@@ -355,7 +364,8 @@
             payOption: document.getElementById('payOption').value,
             paymentFrequency: document.getElementById('payOption').value,
             paymentMethod: document.getElementById('paymentMethod').value,
-            passportName: document.getElementById('passport').files[0]?.name || 'None'
+            passportName: passportName,
+            passportBase64: passportBase64
         };
 
         if (isTIS) {
@@ -366,7 +376,7 @@
             formData.parentName = document.getElementById('parentName').value;
             formData.parentPhone = document.getElementById('parentPhone').value;
             formData.parentEmail = document.getElementById('parentEmail').value;
-            formData.email = formData.parentEmail; // For duplicate check
+            formData.email = formData.parentEmail;
         } else {
             formData.title = document.getElementById('title').value;
             formData.surname = document.getElementById('surname').value;
@@ -390,7 +400,13 @@
         }
 
         try {
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+            // THE FIX: 'text/plain' prevents CORS preflight failure in Google Apps Script
+            await fetch(SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                body: JSON.stringify(formData) 
+            });
             
             if (isTIS) {
                 msg.innerHTML = `Registration Successful! <br><br>
@@ -399,17 +415,17 @@
                         <a href="${WHATSAPP_GROUP_LINK}" target="_blank">Click Here to Join WhatsApp Group</a>
                     </div>`;
             } else {
-                msg.innerText = 'Registration Successful! Admission letter sent via email.';
+                msg.innerText = 'Registration Successful! Passport saved to Drive & Admission letter sent via email.';
             }
             msg.className = 'success';
             document.getElementById('regForm').reset();
-            toggleFormMode(); // Reset visibility
+            toggleFormMode();
+            setTimeout(() => showView('form'), 4000);
         } catch (error) {
             msg.innerText = 'Error occurred. Please try again.'; msg.className = 'error';
         } finally { btn.disabled = false; btn.innerText = 'Confirm & Submit'; }
     }
 
-    // ADMIN LOGIC
     function adminLogin() {
         if (document.getElementById('adminPass').value === ADMIN_PASSWORD) showView('admin-dashboard'); 
         else document.getElementById('loginMsg').innerText = 'Incorrect password!';
@@ -423,7 +439,7 @@
             const data = await response.json();
             renderTable(data, tab);
         } catch (error) {
-            document.getElementById('tableContainer').innerHTML = 'Error loading data.';
+            document.getElementById('tableContainer').innerHTML = 'Error loading data. Check Apps Script deployment.';
         }
     }
 
@@ -446,14 +462,14 @@
             filtered.forEach(s => {
                 html += `<tr><td>${s.Year}</td><td>${s.Branch}</td><td>${s['Student Full Name']}</td><td>${s.Course}</td>
                 <td>${s['School Name'] || 'N/A'}</td><td>${s['Class/Grade']}</td><td>${s['Payment Frequency']}</td><td>${s['Amount Paid']}</td>
-                <td class="${s.Status === 'Pending' ? 'status-pending' : 'status-paid'}">${s.Status}</td></tr>`;
+                <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status']}</td></tr>`;
             });
         } else {
             html += `<th>Batch</th><th>Total (₦)</th><th>Paid (₦)</th><th>Method</th><th>Status</th></tr>`;
             filtered.forEach(s => {
                 html += `<tr><td>${s.Year}</td><td>${s.Branch}</td><td>${s.Title} ${s.Surname} ${s.FirstName}</td><td>${s['Course Applied For']}</td>
                 <td>${s.Batch}</td><td>${s['Agreed Payment']}</td><td>${s['Amount Paid']}</td><td>${s['Payment Method'] || 'N/A'}</td>
-                <td class="${s.Status === 'Pending' ? 'status-pending' : 'status-paid'}">${s.Status}</td></tr>`;
+                <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status']}</td></tr>`;
             });
         }
         html += `</table>`;
