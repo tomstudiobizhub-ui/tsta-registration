@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSTA Registration Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #004d99; --secondary: #0073e6; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 0; }
@@ -12,7 +14,7 @@
         .logo-icon { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
         nav button { background: transparent; border: 1px solid white; color: white; padding: 8px 15px; margin-left: 10px; border-radius: 5px; cursor: pointer; }
         nav button:hover { background: white; color: var(--primary); }
-        .container { max-width: 800px; margin: 30px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .container { max-width: 1000px; margin: 30px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
         h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
         h3 { color: var(--secondary); margin-top: 20px; }
@@ -25,6 +27,11 @@
         .btn-primary { background: var(--primary); color: white; }
         .btn-success { background: #28a745; color: white; }
         .btn-secondary { background: #6c757d; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 20px; border-radius: 10px; text-align: center; }
+        .stat-card h3 { margin: 0; font-size: 32px; color: white; }
+        .stat-card p { margin: 5px 0 0 0; opacity: 0.9; }
         .preview-doc { border: 2px dashed var(--primary); padding: 20px; margin: 20px 0; background: #fcfcfc; border-radius: 8px; }
         .id-card { width: 280px; height: 160px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 15px; border-radius: 10px; margin: 20px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .policy-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-top: 20px; }
@@ -41,7 +48,27 @@
         .success { color: green; } .error { color: red; }
         .whatsapp-box { background: #dcf8c6; border: 1px solid #25D366; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;}
         .whatsapp-box a { color: #128C7E; font-weight: bold; text-decoration: none; font-size: 18px; }
-
+        
+        /* PDF Preview Styles */
+        .pdf-preview-container { 
+            background: white; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); 
+            margin: 20px 0;
+            padding: 0;
+        }
+        .pdf-page {
+            padding: 40px;
+            background: white;
+            border-bottom: 2px solid #eee;
+            page-break-after: always;
+        }
+        .pdf-page:last-child { border-bottom: none; }
+        .pdf-header { text-align: center; border-bottom: 3px solid var(--primary); padding-bottom: 20px; margin-bottom: 30px; }
+        .pdf-header img { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; }
+        .pdf-header h1 { color: var(--primary); margin: 10px 0; }
+        .pdf-footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; font-size: 12px; color: #666; }
+        .passport-img { width: 120px; height: 150px; object-fit: cover; border: 2px solid var(--primary); border-radius: 5px; float: right; margin-left: 20px; }
+        
         @media (max-width: 768px) {
             .form-grid { grid-template-columns: 1fr; }
             .container { margin: 10px; padding: 15px; }
@@ -52,6 +79,7 @@
             .filters input, .filters select, .filters button { width: 100%; }
             table { display: block; overflow-x: auto; white-space: nowrap; }
             .id-card { width: 100%; max-width: 280px; }
+            .pdf-page { padding: 20px; }
         }
     </style>
 </head>
@@ -179,30 +207,59 @@
             </div>
         </div>
 
-        <button type="button" class="btn btn-primary" onclick="showPreview()">Preview & Review Policy</button>
+        <button type="button" class="btn btn-primary" onclick="showPreview()">Preview & Generate PDF</button>
     </form>
 </div>
 
-<!-- VIEW 2: PREVIEW & POLICY -->
+<!-- VIEW 2: PDF PREVIEW -->
 <div id="view-preview" class="container hidden">
-    <h2>Review Admission & Policy</h2>
-    <div id="previewContent"></div>
-    <div class="policy-box" id="policyBox">
-        <h3 style="color:#856404; margin-top:0;">📜 TSTA Student Policy & Guidelines</h3>
-        <ul>
-            <li><strong>Use of PCs:</strong> Computers are strictly for learning. No gaming or unauthorized downloads.</li>
-            <li><strong>Certificates:</strong> Awarded upon 100% completion and final project submission.</li>
-            <li><strong>Payment Plan:</strong> Installments limited to max two. Balance cleared before certificate.</li>
-            <li><strong>Assignments:</strong> Submit via official <strong>TSTA Telegram Channel</strong>.</li>
-            <li><strong>Support:</strong> Reach out via official <strong>TSTA WhatsApp line</strong>.</li>
-        </ul>
-        <label style="display: flex; align-items: center; gap: 10px; margin-top: 15px; font-weight: normal;">
-            <input type="checkbox" id="agreePolicy" style="width: auto; transform: scale(1.5);"> 
-            I have read and agree to abide by the TSTA Student Policy.
-        </label>
+    <h2>Review & Generate Documents</h2>
+    <div id="pdfPreviewContent" class="pdf-preview-container">
+        <!-- Page 1: Student Data with Passport -->
+        <div class="pdf-page" id="page1">
+            <div class="pdf-header">
+                <img src="logo.png" alt="TSTA Logo">
+                <h1>TOMSTUDIO TECH ACADEMY</h1>
+                <p>STUDENT REGISTRATION DATA</p>
+            </div>
+            <div id="studentDataContent"></div>
+            <div class="pdf-footer">
+                <p>Generated on: <span id="genDate1"></span> | TSTA Registration System</p>
+            </div>
+        </div>
+        
+        <!-- Page 2: Admission Letter -->
+        <div class="pdf-page" id="page2">
+            <div class="pdf-header">
+                <img src="logo.png" alt="TSTA Logo">
+                <h1>OFFICIAL ADMISSION LETTER</h1>
+            </div>
+            <div id="admissionLetterContent"></div>
+            <div class="pdf-footer">
+                <p>Address: 265, Oluwakayode Street, Isawo Road, Ago-Palace, Lagos<br>
+                Email: tomstudiotechacademy@gmail.com | © 2024 TSTA</p>
+            </div>
+        </div>
+        
+        <!-- Page 3: Student Policy -->
+        <div class="pdf-page" id="page3">
+            <div class="pdf-header">
+                <img src="logo.png" alt="TSTA Logo">
+                <h1>STUDENT POLICY & GUIDELINES</h1>
+            </div>
+            <div id="policyContent"></div>
+            <div class="pdf-footer">
+                <p>By registering, you agree to abide by these policies<br>
+                © 2024 Tomstudio Tech Academy</p>
+            </div>
+        </div>
     </div>
-    <button type="button" class="btn btn-secondary" onclick="showView('form')">Edit Details</button>
-    <button type="button" class="btn btn-success" id="submitBtn" onclick="submitForm()">Confirm & Submit</button>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="showView('form')">Edit Details</button>
+        <button type="button" class="btn btn-info" onclick="downloadPDF()">Download PDF</button>
+        <button type="button" class="btn btn-success" id="submitBtn" onclick="submitForm()">Confirm & Submit</button>
+    </div>
     <p id="message"></p>
 </div>
 
@@ -215,8 +272,29 @@
 </div>
 
 <!-- VIEW 4: ADMIN DASHBOARD -->
-<div id="view-admin-dashboard" class="container hidden" style="max-width: 1000px;">
+<div id="view-admin-dashboard" class="container hidden" style="max-width: 1200px;">
     <h2>Student Records Dashboard</h2>
+    
+    <!-- Statistics -->
+    <div class="stats-grid" id="statsContainer">
+        <div class="stat-card">
+            <h3 id="totalCount">0</h3>
+            <p>Total Students</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="generalCount">0</h3>
+            <p>General/TSTA</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="tisCount">0</h3>
+            <p>Tech in Schools</p>
+        </div>
+        <div class="stat-card">
+            <h3 id="ticCount">0</h3>
+            <p>Tech in Churches</p>
+        </div>
+    </div>
+    
     <div class="filters">
         <select id="filterTab">
             <option value="TISA_General">TISA / General</option>
@@ -230,6 +308,8 @@
             <option>Branch 3</option><option>Online/Virtual</option>
         </select>
         <button class="btn btn-primary" onclick="loadStudents()">Filter</button>
+        <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+        <button class="btn btn-info" onclick="exportToPDF()">Export PDF</button>
         <button class="btn btn-secondary" onclick="showView('form')">Logout</button>
     </div>
     <div id="tableContainer">Click 'Filter' to load data.</div>
@@ -239,6 +319,8 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec';
     const ADMIN_PASSWORD = 'TSTA2024'; 
     const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/E43TEvdrbua4jStVH8uBse';
+    let currentPreviewData = null;
+    let currentPassportBase64 = '';
 
     function showView(viewName) {
         document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
@@ -246,7 +328,6 @@
         window.scrollTo(0, 0);
     }
 
-    // FIXED: Properly toggles 'required' attribute to prevent "not focusable" error
     function toggleFormMode() {
         const channel = document.getElementById('channel').value;
         const isTIS = channel === 'Tech in Schools';
@@ -259,7 +340,6 @@
         document.getElementById('agreedPayGroup').classList.toggle('hidden', isTIS);
         document.getElementById('paymentMethodGroup').classList.toggle('hidden', isTIS);
         
-        // Remove 'required' from hidden fields so form validation doesn't block submission
         document.getElementById('generalFields').querySelectorAll('input, select, textarea').forEach(el => el.required = !isTIS);
         document.getElementById('generalGuardian').querySelectorAll('input, select, textarea').forEach(el => el.required = !isTIS);
         document.getElementById('tisFields').querySelectorAll('input, select, textarea').forEach(el => el.required = isTIS);
@@ -297,74 +377,168 @@
         return age;
     }
 
-    function showPreview() {
+    async function showPreview() {
         if (!document.getElementById('regForm').checkValidity()) { 
             document.getElementById('regForm').reportValidity(); 
             return; 
         }
         
-        const isTIS = document.getElementById('channel').value === 'Tech in Schools';
-        let previewHTML = '';
-
-        if (isTIS) {
-            previewHTML = `
-                <div class="preview-doc">
-                    <h3 style="text-align:center;">Tech in Schools Admission Summary</h3>
-                    <p><strong>Student:</strong> ${document.getElementById('studentFullName').value} (${document.getElementById('classGrade').value})</p>
-                    <p><strong>School:</strong> ${document.getElementById('schoolName').value}</p>
-                    <p><strong>Course:</strong> ${document.getElementById('course').value}</p>
-                    <p><strong>Branch:</strong> ${document.getElementById('branch').value}</p>
-                    <p><strong>Payment:</strong> ${document.getElementById('payOption').value} (${document.getElementById('amountPaid').value} paid)</p>
-                    <p><em>Upon submission, the parent will be prompted to join the TIS WhatsApp Group.</em></p>
-                </div>`;
-            document.getElementById('policyBox').classList.add('hidden');
-        } else {
-            const age = calculateAge(document.getElementById('dob').value);
-            const isMinor = age < 16;
-            const fullName = `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
-            
-            previewHTML = `
-                <div class="id-card">
-                    <h4 style="margin:0; border-bottom:1px solid white; padding-bottom:5px;">TSTA STUDENT ID</h4>
-                    <p style="margin:5px 0;"><strong>Name:</strong> ${fullName}</p>
-                    <p style="margin:5px 0;"><strong>Course:</strong> ${document.getElementById('course').value}</p>
-                    <p style="margin:5px 0;"><strong>Branch:</strong> ${document.getElementById('branch').value}</p>
-                </div>
-                <div class="preview-doc">
-                    <h3 style="text-align:center;">Admission Letter Summary</h3>
-                    <p>Dear <strong>${isMinor ? `Parent/Guardian of ${fullName}` : fullName}</strong>,</p>
-                    <p>You are admitted into <strong>${document.getElementById('course').value}</strong>. Initial payment of <strong>₦${document.getElementById('amountPaid').value}</strong> received via <strong>${document.getElementById('paymentMethod').value}</strong>.</p>
-                </div>`;
-            document.getElementById('policyBox').classList.remove('hidden');
-        }
-
-        document.getElementById('previewContent').innerHTML = previewHTML;
-        showView('preview');
-    }
-
-    async function submitForm() {
-        const isTIS = document.getElementById('channel').value === 'Tech in Schools';
-        if (!isTIS && !document.getElementById('agreePolicy').checked) { alert('You must agree to the Student Policy.'); return; }
-        
-        const btn = document.getElementById('submitBtn'); const msg = document.getElementById('message');
-        btn.disabled = true; btn.innerText = 'Submitting to Drive & Sheet...'; msg.innerText = '';
-
+        // Convert passport to base64
         const fileInput = document.getElementById('passport');
-        let passportBase64 = '';
-        let passportName = 'None';
-        
+        currentPassportBase64 = '';
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
-            passportName = file.name;
-            passportBase64 = await new Promise(resolve => {
+            currentPassportBase64 = await new Promise(resolve => {
                 const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.onloadend = () => resolve(reader.result);
                 reader.readAsDataURL(file);
             });
         }
+        
+        const isTIS = document.getElementById('channel').value === 'Tech in Schools';
+        const age = isTIS ? 15 : calculateAge(document.getElementById('dob').value);
+        const isMinor = age < 16;
+        
+        // Store data for submission
+        currentPreviewData = {
+            isTIS, isMinor, age,
+            channel: document.getElementById('channel').value,
+            branch: document.getElementById('branch').value,
+            course: document.getElementById('course').value,
+            duration: document.getElementById('duration').value,
+            amountPaid: document.getElementById('amountPaid').value,
+            payOption: document.getElementById('payOption').value,
+            paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
+            // ... collect all other fields
+        };
+        
+        // Generate PDF pages
+        generateStudentDataPage(isTIS, isMinor);
+        generateAdmissionLetterPage(isTIS, isMinor);
+        generatePolicyPage();
+        
+        showView('preview');
+    }
+    
+    function generateStudentDataPage(isTIS, isMinor) {
+        const fullName = isTIS ? 
+            document.getElementById('studentFullName').value :
+            `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
+        
+        const passportImg = currentPassportBase64 ? 
+            `<img src="${currentPassportBase64}" class="passport-img" alt="Passport">` : '';
+        
+        let html = `
+            ${passportImg}
+            <h2 style="color: #004d99; margin-top: 0;">STUDENT INFORMATION</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Full Name:</strong></td><td>${fullName}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Course:</strong></td><td>${document.getElementById('course').value}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Branch:</strong></td><td>${document.getElementById('branch').value}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Duration:</strong></td><td>${document.getElementById('duration').value}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td>₦${document.getElementById('amountPaid').value}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Registration Date:</strong></td><td>${new Date().toLocaleDateString()}</td></tr>
+            </table>
+        `;
+        
+        document.getElementById('studentDataContent').innerHTML = html;
+        document.getElementById('genDate1').textContent = new Date().toLocaleString();
+    }
+    
+    function generateAdmissionLetterPage(isTIS, isMinor) {
+        const fullName = isTIS ? 
+            document.getElementById('studentFullName').value :
+            `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
+        
+        const recipientName = isMinor ? `Parent/Guardian of ${fullName}` : fullName;
+        
+        const html = `
+            <p style="font-size: 16px; margin-bottom: 30px;">
+                <strong>Dear ${recipientName},</strong>
+            </p>
+            <p style="line-height: 1.6;">
+                We are pleased to inform you that you have been successfully admitted into 
+                <strong>${document.getElementById('course').value}</strong> at Tomstudio Tech Academy!
+            </p>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #004d99; margin-top: 0;">Registration Details:</h3>
+                <p><strong>Student Name:</strong> ${fullName}</p>
+                <p><strong>Course:</strong> ${document.getElementById('course').value}</p>
+                <p><strong>Branch:</strong> ${document.getElementById('branch').value}</p>
+                <p><strong>Duration:</strong> ${document.getElementById('duration').value}</p>
+                <p><strong>Payment:</strong> Initial payment of <strong>₦${document.getElementById('amountPaid').value}</strong> received</p>
+            </div>
+            <p style="line-height: 1.6;">
+                We look forward to having you in class. Please arrive 15 minutes early for your first session.
+            </p>
+            <p style="margin-top: 40px;">
+                Best Regards,<br>
+                <strong>Registrar, TSTA</strong><br>
+                Tomstudio Tech Academy
+            </p>
+        `;
+        
+        document.getElementById('admissionLetterContent').innerHTML = html;
+    }
+    
+    function generatePolicyPage() {
+        const html = `
+            <div style="line-height: 1.8;">
+                <h3 style="color: #004d99;">1. USE OF COMPUTERS</h3>
+                <p>Computers are strictly for learning purposes only. No gaming, downloading unauthorized software, or visiting inappropriate websites is allowed.</p>
+                
+                <h3 style="color: #004d99;">2. CERTIFICATES</h3>
+                <p>Certificates will be awarded only upon 100% completion of the course and successful submission of the final project.</p>
+                
+                <h3 style="color: #004d99;">3. PAYMENT PLAN</h3>
+                <p>Installment plans are limited to a maximum of two (2) installments. The balance must be cleared before certificate issuance.</p>
+                
+                <h3 style="color: #004d99;">4. ASSIGNMENTS & PROJECTS</h3>
+                <p>All class assignments and projects MUST be submitted via the official TSTA Telegram Channel.</p>
+                
+                <h3 style="color: #004d99;">5. SUPPORT</h3>
+                <p>For technical or class support, reach out via the official TSTA WhatsApp line.</p>
+                
+                <h3 style="color: #004d99;">6. ATTENDANCE</h3>
+                <p>Regular attendance is mandatory. Students must maintain at least 75% attendance to be eligible for certification.</p>
+            </div>
+        `;
+        
+        document.getElementById('policyContent').innerHTML = html;
+    }
+    
+    async function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        const pages = document.querySelectorAll('.pdf-page');
+        
+        for (let i = 0; i < pages.length; i++) {
+            if (i > 0) pdf.addPage();
+            
+            const canvas = await html2canvas(pages[i], { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 210;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        }
+        
+        const studentName = currentPreviewData.isTIS ? 
+            document.getElementById('studentFullName').value :
+            `${document.getElementById('surname').value}_${document.getElementById('firstName').value}`;
+        
+        pdf.save(`TSTA_${studentName}_Documents.pdf`);
+    }
+
+    async function submitForm() {
+        if (!currentPreviewData) { alert('Please generate preview first.'); return; }
+        
+        const btn = document.getElementById('submitBtn');
+        const msg = document.getElementById('message');
+        btn.disabled = true; btn.innerText = 'Submitting...'; msg.innerText = '';
 
         const formData = {
-            channel: document.getElementById('channel').value,
+            channel: currentPreviewData.channel,
             branch: document.getElementById('branch').value,
             registrarRole: document.getElementById('registrarRole').value,
             course: document.getElementById('course').value,
@@ -372,12 +546,12 @@
             amountPaid: document.getElementById('amountPaid').value,
             payOption: document.getElementById('payOption').value,
             paymentFrequency: document.getElementById('payOption').value,
-            paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
-            passportName: passportName,
-            passportBase64: passportBase64
+            paymentMethod: currentPreviewData.isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
+            passportName: document.getElementById('passport').files[0]?.name || 'None',
+            passportBase64: currentPassportBase64 ? currentPassportBase64.split(',')[1] : ''
         };
 
-        if (isTIS) {
+        if (currentPreviewData.isTIS) {
             formData.studentFullName = document.getElementById('studentFullName').value;
             formData.schoolName = document.getElementById('schoolName').value;
             formData.schoolAddress = document.getElementById('schoolAddress').value;
@@ -409,34 +583,60 @@
         }
 
         try {
-            await fetch(SCRIPT_URL, { 
+            const response = await fetch(SCRIPT_URL, { 
                 method: 'POST', 
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                headers: { 'Content-Type': 'application/json' }, 
                 body: JSON.stringify(formData) 
             });
             
-            if (isTIS) {
-                msg.innerHTML = `Registration Successful! <br><br>
-                    <div class="whatsapp-box">
-                        <p>Please add the Parent/Guardian to the official TIS WhatsApp Group:</p>
-                        <a href="${WHATSAPP_GROUP_LINK}" target="_blank">Click Here to Join WhatsApp Group</a>
-                    </div>`;
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                if (currentPreviewData.isTIS) {
+                    msg.innerHTML = `Registration Successful! <br><br>
+                        <div class="whatsapp-box">
+                            <p>Please add the Parent/Guardian to the official TIS WhatsApp Group:</p>
+                            <a href="${WHATSAPP_GROUP_LINK}" target="_blank">Click Here to Join WhatsApp Group</a>
+                        </div>`;
+                } else {
+                    msg.innerText = 'Registration Successful! Documents sent via email.';
+                }
+                msg.className = 'success';
+                document.getElementById('regForm').reset();
+                toggleFormMode();
+                setTimeout(() => showView('form'), 4000);
             } else {
-                msg.innerText = 'Registration Successful! Passport saved to Drive & Admission letter sent via email.';
+                throw new Error(result.message || 'Submission failed');
             }
-            msg.className = 'success';
-            document.getElementById('regForm').reset();
-            toggleFormMode();
-            setTimeout(() => showView('form'), 4000);
         } catch (error) {
-            msg.innerText = 'Error occurred. Please try again.'; msg.className = 'error';
-        } finally { btn.disabled = false; btn.innerText = 'Confirm & Submit'; }
+            msg.innerText = 'Error: ' + error.message; msg.className = 'error';
+            console.error('Submission error:', error);
+        } finally { 
+            btn.disabled = false; btn.innerText = 'Confirm & Submit'; 
+        }
     }
 
     function adminLogin() {
-        if (document.getElementById('adminPass').value === ADMIN_PASSWORD) showView('admin-dashboard'); 
-        else document.getElementById('loginMsg').innerText = 'Incorrect password!';
+        if (document.getElementById('adminPass').value === ADMIN_PASSWORD) {
+            showView('admin-dashboard');
+            loadStats();
+        } else {
+            document.getElementById('loginMsg').innerText = 'Incorrect password!';
+        }
+    }
+    
+    async function loadStats() {
+        try {
+            const response = await fetch(`${SCRIPT_URL}?action=getStats`);
+            const stats = await response.json();
+            
+            document.getElementById('totalCount').textContent = stats.total || 0;
+            document.getElementById('generalCount').textContent = stats.TISA_General || 0;
+            document.getElementById('tisCount').textContent = stats.TechInSchools || 0;
+            document.getElementById('ticCount').textContent = stats.TechInChurches || 0;
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
     }
 
     async function loadStudents() {
@@ -444,14 +644,16 @@
         const tab = document.getElementById('filterTab').value;
         try {
             const response = await fetch(`${SCRIPT_URL}?action=getStudents&tab=${tab}`);
-            const data = await response.json();
+            const result = await response.json();
             
-            // DEBUG: Check your browser console (F12) to see the exact header names from your sheet
-            if (data.length > 0) console.log("Sheet Headers Found:", Object.keys(data[0]));
-            
-            renderTable(data, tab);
+            if (result.status === 'success') {
+                renderTable(result.data, tab);
+            } else {
+                throw new Error('Invalid response');
+            }
         } catch (error) {
-            document.getElementById('tableContainer').innerHTML = 'Error loading data. Check Apps Script deployment.';
+            document.getElementById('tableContainer').innerHTML = 'Error loading data. Check console.';
+            console.error('Load error:', error);
         }
     }
 
@@ -466,30 +668,82 @@
             return nameMatch && branchMatch;
         });
 
-        if (filtered.length === 0) { document.getElementById('tableContainer').innerHTML = '<p>No students found.</p>'; return; }
+        if (filtered.length === 0) { 
+            document.getElementById('tableContainer').innerHTML = '<p>No students found.</p>'; 
+            return; 
+        }
 
         let html = `<table><tr><th>Year</th><th>Branch</th><th>Name</th><th>Course</th>`;
         if (tab === 'TechInSchools') {
             html += `<th>School</th><th>Class</th><th>Frequency</th><th>Paid (₦)</th><th>Status</th></tr>`;
             filtered.forEach(s => {
-                html += `<tr><td>${s.Year || ''}</td><td>${s.Branch || ''}</td><td>${s['Student Full Name'] || ''}</td><td>${s.Course || ''}</td>
-                <td>${s['School Name'] || 'N/A'}</td><td>${s['Class/Grade'] || ''}</td><td>${s['Payment Frequency'] || ''}</td><td>${s['Amount Paid'] || ''}</td>
-                <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td></tr>`;
+                html += `<tr>
+                    <td>${s.Year || ''}</td>
+                    <td>${s.Branch || ''}</td>
+                    <td>${s['Student Full Name'] || ''}</td>
+                    <td>${s.Course || ''}</td>
+                    <td>${s['School Name'] || 'N/A'}</td>
+                    <td>${s['Class/Grade'] || ''}</td>
+                    <td>${s['Payment Frequency'] || ''}</td>
+                    <td>${s['Amount Paid'] || ''}</td>
+                    <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td>
+                </tr>`;
             });
         } else {
             html += `<th>Batch</th><th>Total (₦)</th><th>Paid (₦)</th><th>Method</th><th>Status</th></tr>`;
             filtered.forEach(s => {
-                // Note: Ensure your sheet headers match these exactly: 'Course Applied For', 'Agreed Payment', 'Payment Method', 'Payment Status'
-                html += `<tr><td>${s.Year || ''}</td><td>${s.Branch || ''}</td><td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td><td>${s['Course Applied For'] || ''}</td>
-                <td>${s.Batch || ''}</td><td>${s['Agreed Payment'] || ''}</td><td>${s['Amount Paid'] || ''}</td><td>${s['Payment Method'] || 'N/A'}</td>
-                <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td></tr>`;
+                html += `<tr>
+                    <td>${s.Year || ''}</td>
+                    <td>${s.Branch || ''}</td>
+                    <td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td>
+                    <td>${s['Course Applied For'] || ''}</td>
+                    <td>${s.Batch || ''}</td>
+                    <td>${s['Agreed Payment'] || ''}</td>
+                    <td>${s['Amount Paid'] || ''}</td>
+                    <td>${s['Payment Method'] || 'N/A'}</td>
+                    <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td>
+                </tr>`;
             });
         }
         html += `</table>`;
         document.getElementById('tableContainer').innerHTML = html;
     }
+    
+    function exportToCSV() {
+        const tab = document.getElementById('filterTab').value;
+        const table = document.querySelector('table');
+        if (!table) { alert('No data to export'); return; }
+        
+        let csv = [];
+        const rows = table.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td, th');
+            const rowData = [];
+            cols.forEach(col => rowData.push('"' + col.textContent.trim() + '"'));
+            csv.push(rowData.join(','));
+        });
+        
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TSTA_${tab}_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    }
+    
+    async function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const table = document.querySelector('table');
+        if (!table) { alert('No data to export'); return; }
+        
+        const pdf = new jsPDF('landscape');
+        pdf.autoTable({ html: 'table' });
+        
+        const tab = document.getElementById('filterTab').value;
+        pdf.save(`TSTA_${tab}_Export_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
 
-    // Initialize toggle mode state on load
     toggleFormMode();
 </script>
 </body>
