@@ -101,17 +101,17 @@
         <div id="generalFields">
             <h3>Personal Information</h3>
             <div class="form-grid">
-                <div class="form-group"><label>Title</label><select id="title"><option>Mr</option><option>Mrs</option><option>Ms</option></select></div>
-                <div class="form-group"><label>Surname</label><input type="text" id="surname"></div>
-                <div class="form-group"><label>First Name</label><input type="text" id="firstName"></div>
+                <div class="form-group"><label>Title</label><select id="title" required><option>Mr</option><option>Mrs</option><option>Ms</option></select></div>
+                <div class="form-group"><label>Surname</label><input type="text" id="surname" required></div>
+                <div class="form-group"><label>First Name</label><input type="text" id="firstName" required></div>
                 <div class="form-group"><label>Middle Name</label><input type="text" id="middleName"></div>
-                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob"></div>
-                <div class="form-group"><label>Gender</label><select id="gender"><option>Male</option><option>Female</option></select></div>
-                <div class="form-group"><label>State of Origin</label><input type="text" id="state"></div>
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone"></div>
-                <div class="form-group full"><label>Home Address</label><textarea id="address"></textarea></div>
-                <div class="form-group"><label>Email Address</label><input type="email" id="email"></div>
-                <div class="form-group"><label>Educational Qualification</label><input type="text" id="qualification"></div>
+                <div class="form-group"><label>Date of Birth</label><input type="date" id="dob" required></div>
+                <div class="form-group"><label>Gender</label><select id="gender" required><option>Male</option><option>Female</option></select></div>
+                <div class="form-group"><label>State of Origin</label><input type="text" id="state" required></div>
+                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required></div>
+                <div class="form-group full"><label>Home Address</label><textarea id="address" required></textarea></div>
+                <div class="form-group"><label>Email Address</label><input type="email" id="email" required></div>
+                <div class="form-group"><label>Educational Qualification</label><input type="text" id="qualification" required></div>
                 <div class="form-group"><label>Occupation</label><input type="text" id="occupation"></div>
             </div>
         </div>
@@ -134,15 +134,15 @@
             <div class="form-group"><label>Course Applied For</label>
                 <select id="course" required>
                     <option>ICT Fundamentals</option><option>Digital Literacy</option><option>Graphics Design</option>
-                    <option>Coding/Web Dev</option><option>Photography</option><option>Video Editing</option><option>Data Analysis</option><option>Digital Marketting</option>
+                    <option>Coding/Web Dev</option><option>Photography</option><option>Video Editing</option><option>Data Analysis</option><option>Digital Marketing</option>
                     <option>AutoCAD</option><option>Animation</option><option>Revit Architecture</option><option>Scratch Coding</option><option>UI/UX</option><option>Cyber Security</option><option>Other/Special</option>
                 </select>
             </div>
             <div class="form-group"><label>Training Duration</label><input type="text" id="duration" placeholder="e.g., 3 Months" required></div>
-            <div class="form-group" id="batchGroup"><label>Preferred Batch</label><select id="batch"><option>Morning</option><option>Afternoon</option><option>Evening</option></select></div>
+            <div class="form-group" id="batchGroup"><label>Preferred Batch</label><select id="batch" required><option>Morning</option><option>Afternoon</option><option>Evening</option></select></div>
             <div class="form-group" id="sourceGroup">
                 <label>How did you hear about us?</label>
-                <select id="source">
+                <select id="source" required>
                     <option value="">-- Select Option --</option>
                     <option>Referral</option><option>Flyer</option><option>Banners</option>
                     <option>Past Students</option><option>Social Media</option><option>Other</option>
@@ -152,7 +152,7 @@
 
         <h3>Payment Details</h3>
         <div class="form-grid">
-            <div class="form-group" id="agreedPayGroup"><label>Agreed Total Payment (₦)</label><input type="number" id="agreedPayment"></div>
+            <div class="form-group" id="agreedPayGroup"><label>Agreed Total Payment (₦)</label><input type="number" id="agreedPayment" required></div>
             <div class="form-group">
                 <label id="payOptionLabel">Payment Option</label>
                 <select id="payOption" required>
@@ -161,7 +161,7 @@
             </div>
             <div class="form-group" id="paymentMethodGroup">
                 <label>Payment Method</label>
-                <select id="paymentMethod">
+                <select id="paymentMethod" required>
                     <option>Cash</option><option>Transfer (TRF)</option>
                 </select>
             </div>
@@ -172,10 +172,10 @@
         <div id="generalGuardian">
             <h3>Emergency Contact (Guardian)</h3>
             <div class="form-grid">
-                <div class="form-group"><label>Guardian Name</label><input type="text" id="guardianName"></div>
-                <div class="form-group"><label>Relationship</label><input type="text" id="guardianRel"></div>
-                <div class="form-group"><label>Guardian Phone</label><input type="tel" id="guardianPhone"></div>
-                <div class="form-group hidden" id="guardianEmailGroup"><label>Guardian Email (Required if &lt; 16)</label><input type="email" id="guardianEmail"></div>
+                <div class="form-group"><label>Guardian Name</label><input type="text" id="guardianName" required></div>
+                <div class="form-group"><label>Relationship</label><input type="text" id="guardianRel" required></div>
+                <div class="form-group"><label>Guardian Phone</label><input type="tel" id="guardianPhone" required></div>
+                <div class="form-group hidden" id="guardianEmailGroup"><label>Guardian Email (Required if < 16)</label><input type="email" id="guardianEmail"></div>
             </div>
         </div>
 
@@ -246,12 +246,11 @@
         window.scrollTo(0, 0);
     }
 
-    // FIXED: Properly toggles 'required' attributes to prevent validation errors on hidden fields
+    // FIXED: Properly toggles 'required' attribute to prevent "not focusable" error
     function toggleFormMode() {
         const channel = document.getElementById('channel').value;
         const isTIS = channel === 'Tech in Schools';
         
-        // 1. Toggle Visibility
         document.getElementById('generalFields').classList.toggle('hidden', isTIS);
         document.getElementById('tisFields').classList.toggle('hidden', !isTIS);
         document.getElementById('generalGuardian').classList.toggle('hidden', isTIS);
@@ -259,28 +258,27 @@
         document.getElementById('sourceGroup').classList.toggle('hidden', isTIS);
         document.getElementById('agreedPayGroup').classList.toggle('hidden', isTIS);
         document.getElementById('paymentMethodGroup').classList.toggle('hidden', isTIS);
+        
+        // Remove 'required' from hidden fields so form validation doesn't block submission
+        document.getElementById('generalFields').querySelectorAll('input, select, textarea').forEach(el => el.required = !isTIS);
+        document.getElementById('generalGuardian').querySelectorAll('input, select, textarea').forEach(el => el.required = !isTIS);
+        document.getElementById('tisFields').querySelectorAll('input, select, textarea').forEach(el => el.required = isTIS);
+        
+        document.getElementById('batch').required = !isTIS;
+        document.getElementById('source').required = !isTIS;
+        document.getElementById('agreedPayment').required = !isTIS;
+        document.getElementById('paymentMethod').required = !isTIS;
 
-        // 2. Toggle 'required' attribute dynamically
-        const setReq = (id, req) => { const el = document.getElementById(id); if(el) el.required = req; };
-        
-        // General fields (required if NOT TIS)
-        ['title', 'surname', 'firstName', 'dob', 'gender', 'state', 'phone', 'address', 'email', 'qualification', 'guardianName', 'guardianRel', 'guardianPhone'].forEach(id => setReq(id, !isTIS));
-        
-        // TIS fields (required if TIS)
-        ['studentFullName', 'schoolName', 'schoolAddress', 'classGrade', 'parentName', 'parentPhone', 'parentEmail'].forEach(id => setReq(id, isTIS));
-        
-        // Conditional course/payment fields
-        setReq('batch', !isTIS);
-        setReq('source', !isTIS);
-        setReq('agreedPayment', !isTIS);
-        setReq('paymentMethod', !isTIS);
-
-        // 3. Update Payment Dropdown Options
         const payOption = document.getElementById('payOption');
-        document.getElementById('payOptionLabel').innerText = isTIS ? 'Payment Frequency' : 'Payment Option';
-        payOption.innerHTML = isTIS 
-            ? `<option>Daily</option><option>Weekly</option><option>Monthly</option><option>Termly</option><option>Per Academic Session</option><option>Yearly</option>`
-            : `<option>One-Time</option><option>Installment (Max 2)</option>`;
+        const payLabel = document.getElementById('payOptionLabel');
+        
+        if (isTIS) {
+            payLabel.innerText = 'Payment Frequency';
+            payOption.innerHTML = `<option>Daily</option><option>Weekly</option><option>Monthly</option><option>Termly</option><option>Per Academic Session</option><option>Yearly</option>`;
+        } else {
+            payLabel.innerText = 'Payment Option';
+            payOption.innerHTML = `<option>One-Time</option><option>Installment (Max 2)</option>`;
+        }
     }
 
     document.getElementById('dob').addEventListener('change', function() {
@@ -300,7 +298,6 @@
     }
 
     function showPreview() {
-        // Validation will now work correctly because hidden fields are no longer 'required'
         if (!document.getElementById('regForm').checkValidity()) { 
             document.getElementById('regForm').reportValidity(); 
             return; 
@@ -317,7 +314,7 @@
                     <p><strong>School:</strong> ${document.getElementById('schoolName').value}</p>
                     <p><strong>Course:</strong> ${document.getElementById('course').value}</p>
                     <p><strong>Branch:</strong> ${document.getElementById('branch').value}</p>
-                    <p><strong>Payment:</strong> ${document.getElementById('payOption').value} (₦${document.getElementById('amountPaid').value} paid)</p>
+                    <p><strong>Payment:</strong> ${document.getElementById('payOption').value} (${document.getElementById('amountPaid').value} paid)</p>
                     <p><em>Upon submission, the parent will be prompted to join the TIS WhatsApp Group.</em></p>
                 </div>`;
             document.getElementById('policyBox').classList.add('hidden');
@@ -449,8 +446,8 @@
             const response = await fetch(`${SCRIPT_URL}?action=getStudents&tab=${tab}`);
             const data = await response.json();
             
-            // DEBUG: Check your browser console (F12) to see the exact keys returned by your sheet
-            if(data.length > 0) console.log("First row keys from Sheet:", Object.keys(data[0]));
+            // DEBUG: Check your browser console (F12) to see the exact header names from your sheet
+            if (data.length > 0) console.log("Sheet Headers Found:", Object.keys(data[0]));
             
             renderTable(data, tab);
         } catch (error) {
@@ -475,20 +472,16 @@
         if (tab === 'TechInSchools') {
             html += `<th>School</th><th>Class</th><th>Frequency</th><th>Paid (₦)</th><th>Status</th></tr>`;
             filtered.forEach(s => {
-                // Fallback keys in case sheet headers are slightly different
-                const course = s.Course || s['Course Applied For'] || '';
-                html += `<tr><td>${s.Year || ''}</td><td>${s.Branch || ''}</td><td>${s['Student Full Name'] || ''}</td><td>${course}</td>
+                html += `<tr><td>${s.Year || ''}</td><td>${s.Branch || ''}</td><td>${s['Student Full Name'] || ''}</td><td>${s.Course || ''}</td>
                 <td>${s['School Name'] || 'N/A'}</td><td>${s['Class/Grade'] || ''}</td><td>${s['Payment Frequency'] || ''}</td><td>${s['Amount Paid'] || ''}</td>
                 <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td></tr>`;
             });
         } else {
-            html += `<th>Batch</th><th>Total ()</th><th>Paid (₦)</th><th>Method</th><th>Status</th></tr>`;
+            html += `<th>Batch</th><th>Total (₦)</th><th>Paid (₦)</th><th>Method</th><th>Status</th></tr>`;
             filtered.forEach(s => {
-                const course = s['Course Applied For'] || s.Course || '';
-                const batch = s.Batch || s['Preferred Batch'] || '';
-                const total = s['Agreed Payment'] || s.Total || '';
-                html += `<tr><td>${s.Year || ''}</td><td>${s.Branch || ''}</td><td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td><td>${course}</td>
-                <td>${batch}</td><td>${total}</td><td>${s['Amount Paid'] || ''}</td><td>${s['Payment Method'] || 'N/A'}</td>
+                // Note: Ensure your sheet headers match these exactly: 'Course Applied For', 'Agreed Payment', 'Payment Method', 'Payment Status'
+                html += `<tr><td>${s.Year || ''}</td><td>${s.Branch || ''}</td><td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td><td>${s['Course Applied For'] || ''}</td>
+                <td>${s.Batch || ''}</td><td>${s['Agreed Payment'] || ''}</td><td>${s['Amount Paid'] || ''}</td><td>${s['Payment Method'] || 'N/A'}</td>
                 <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td></tr>`;
             });
         }
