@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSTA Registration Portal</title>
+    <!-- Load jsPDF correctly -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -49,7 +50,6 @@
         .whatsapp-box { background: #dcf8c6; border: 1px solid #25D366; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;}
         .whatsapp-box a { color: #128C7E; font-weight: bold; text-decoration: none; font-size: 18px; }
         
-        /* PDF Preview Styles */
         .pdf-preview-container { 
             background: white; 
             box-shadow: 0 0 20px rgba(0,0,0,0.1); 
@@ -236,7 +236,7 @@
             </div>
             <div id="admissionLetterContent"></div>
             <div class="pdf-footer">
-                <p>Address: 265, Oluwakayode Street, Isawo Road, Ago-Palace, Lagos<br>
+                <p>Address: 265, Isawo Road, Oke-Oko Isawo, Agric, Ikorodu, Lagos<br>
                 Email: tomstudiotechacademy@gmail.com | © 2024 TSTA</p>
             </div>
         </div>
@@ -316,7 +316,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec'; // Replace with your actual script URL
     const ADMIN_PASSWORD = 'TSTA2024'; 
     const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/E43TEvdrbua4jStVH8uBse';
     let currentPreviewData = null;
@@ -383,7 +383,6 @@
             return; 
         }
         
-        // Convert passport to base64
         const fileInput = document.getElementById('passport');
         currentPassportBase64 = '';
         if (fileInput.files.length > 0) {
@@ -399,7 +398,6 @@
         const age = isTIS ? 15 : calculateAge(document.getElementById('dob').value);
         const isMinor = age < 16;
         
-        // Store data for submission
         currentPreviewData = {
             isTIS, isMinor, age,
             channel: document.getElementById('channel').value,
@@ -409,10 +407,8 @@
             amountPaid: document.getElementById('amountPaid').value,
             payOption: document.getElementById('payOption').value,
             paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
-            // ... collect all other fields
         };
         
-        // Generate PDF pages
         generateStudentDataPage(isTIS, isMinor);
         generateAdmissionLetterPage(isTIS, isMinor);
         generatePolicyPage();
@@ -508,26 +504,36 @@
     }
     
     async function downloadPDF() {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
-        const pages = document.querySelectorAll('.pdf-page');
-        
-        for (let i = 0; i < pages.length; i++) {
-            if (i > 0) pdf.addPage();
+        try {
+            const { jsPDF } = window.jspdf;
+            if (!jsPDF) {
+                alert('PDF library not loaded. Please refresh the page.');
+                return;
+            }
             
-            const canvas = await html2canvas(pages[i], { scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = 210;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const pdf = new jsPDF();
+            const pages = document.querySelectorAll('.pdf-page');
             
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            for (let i = 0; i < pages.length; i++) {
+                if (i > 0) pdf.addPage();
+                
+                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true });
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 210;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            }
+            
+            const studentName = currentPreviewData.isTIS ? 
+                document.getElementById('studentFullName').value :
+                `${document.getElementById('surname').value}_${document.getElementById('firstName').value}`;
+            
+            pdf.save(`TSTA_${studentName}_Documents.pdf`);
+        } catch (error) {
+            console.error('PDF generation error:', error);
+            alert('Error generating PDF. Please try again.');
         }
-        
-        const studentName = currentPreviewData.isTIS ? 
-            document.getElementById('studentFullName').value :
-            `${document.getElementById('surname').value}_${document.getElementById('firstName').value}`;
-        
-        pdf.save(`TSTA_${studentName}_Documents.pdf`);
     }
 
     async function submitForm() {
@@ -583,10 +589,10 @@
         }
 
         try {
+            // FIXED: Using text/plain to avoid CORS preflight
             const response = await fetch(SCRIPT_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(formData) 
+                method: 'POST',
+                body: JSON.stringify(formData)
             });
             
             const result = await response.json();
@@ -609,8 +615,8 @@
                 throw new Error(result.message || 'Submission failed');
             }
         } catch (error) {
-            msg.innerText = 'Error: ' + error.message; msg.className = 'error';
             console.error('Submission error:', error);
+            msg.innerText = 'Error: ' + error.message; msg.className = 'error';
         } finally { 
             btn.disabled = false; btn.innerText = 'Confirm & Submit'; 
         }
@@ -652,7 +658,7 @@
                 throw new Error('Invalid response');
             }
         } catch (error) {
-            document.getElementById('tableContainer').innerHTML = 'Error loading data. Check console.';
+            document.getElementById('tableContainer').innerHTML = 'Error loading data.';
             console.error('Load error:', error);
         }
     }
@@ -733,17 +739,28 @@
     }
     
     async function exportToPDF() {
-        const { jsPDF } = window.jspdf;
-        const table = document.querySelector('table');
-        if (!table) { alert('No data to export'); return; }
-        
-        const pdf = new jsPDF('landscape');
-        pdf.autoTable({ html: 'table' });
-        
-        const tab = document.getElementById('filterTab').value;
-        pdf.save(`TSTA_${tab}_Export_${new Date().toISOString().split('T')[0]}.pdf`);
+        try {
+            const { jsPDF } = window.jspdf;
+            if (!jsPDF) {
+                alert('PDF library not loaded.');
+                return;
+            }
+            
+            const table = document.querySelector('table');
+            if (!table) { alert('No data to export'); return; }
+            
+            const pdf = new jsPDF('landscape');
+            pdf.autoTable({ html: 'table' });
+            
+            const tab = document.getElementById('filterTab').value;
+            pdf.save(`TSTA_${tab}_Export_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('PDF export error:', error);
+            alert('Error exporting PDF');
+        }
     }
 
+    // Initialize on load
     toggleFormMode();
 </script>
 </body>
