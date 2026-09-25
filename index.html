@@ -4,12 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSTA Registration Portal</title>
-    <!-- Load jsPDF correctly -->
-   <!-- Use multiple CDN fallbacks for reliability -->
     <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    
-    <!-- Fallback: If unpkg fails, try cdnjs -->
     <script>
         if (typeof window.jspdf === 'undefined') {
             document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>');
@@ -38,6 +34,7 @@
         .btn-success { background: #28a745; color: white; }
         .btn-secondary { background: #6c757d; color: white; }
         .btn-info { background: #17a2b8; color: white; }
+        .btn-whatsapp { background: #25D366; color: white; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
         .stat-card { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 20px; border-radius: 10px; text-align: center; }
         .stat-card h3 { margin: 0; font-size: 32px; color: white; }
@@ -52,8 +49,8 @@
         th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
         th { background: var(--primary); color: white; }
         tr:nth-child(even) { background: #f9f9f9; }
-        .status-paid { color: green; font-weight: bold; }
-        .status-pending { color: orange; font-weight: bold; }
+        .status-paid { color: green; font-weight: bold; background: #00ff00; padding: 3px 8px; border-radius: 3px; }
+        .status-pending { color: white; font-weight: bold; background: #ff0000; padding: 3px 8px; border-radius: 3px; }
         #message { text-align: center; margin-top: 15px; font-weight: bold; font-size: 16px; }
         .success { color: green; } .error { color: red; }
         .whatsapp-box { background: #dcf8c6; border: 1px solid #25D366; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px;}
@@ -77,6 +74,55 @@
         .pdf-header h1 { color: var(--primary); margin: 10px 0; }
         .pdf-footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; font-size: 12px; color: #666; }
         .passport-img { width: 120px; height: 150px; object-fit: cover; border: 2px solid var(--primary); border-radius: 5px; float: right; margin-left: 20px; }
+        
+        .search-suggestions {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .search-suggestions div {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-suggestions div:hover {
+            background: #f0f0f0;
+        }
+        
+        .date-filter {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .edit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .edit-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
         
         @media (max-width: 768px) {
             .form-grid { grid-template-columns: 1fr; }
@@ -189,7 +235,7 @@
 
         <h3>Payment Details</h3>
         <div class="form-grid">
-            <div class="form-group" id="agreedPayGroup"><label>Agreed Total Payment (₦)</label><input type="number" id="agreedPayment" required></div>
+            <div class="form-group" id="agreedPayGroup"><label>Agreed Total Payment ()</label><input type="number" id="agreedPayment" required></div>
             <div class="form-group">
                 <label id="payOptionLabel">Payment Option</label>
                 <select id="payOption" required>
@@ -220,7 +266,7 @@
     </form>
 </div>
 
-<!-- VIEW 2: PDF PREVIEW -->
+<!-- VIEW 2: PDF PREVIEW & SUBMISSION -->
 <div id="view-preview" class="container hidden">
     <h2>Review & Generate Documents</h2>
     <div id="pdfPreviewContent" class="pdf-preview-container">
@@ -269,6 +315,14 @@
         <button type="button" class="btn btn-info" onclick="downloadPDF()">Download PDF</button>
         <button type="button" class="btn btn-success" id="submitBtn" onclick="submitForm()">Confirm & Submit</button>
     </div>
+    <div id="postSubmitActions" class="hidden" style="margin-top: 20px;">
+        <button type="button" class="btn btn-whatsapp" onclick="shareToWhatsApp()">
+            <svg style="width:20px;height:20px;vertical-align:middle;margin-right:8px;" viewBox="0 0 24 24" fill="white">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.591 1.969.891 3.091.891 3.181 0 5.767-2.587 5.767-5.766.001-3.182-2.585-5.769-5.766-5.769zm6.833 8.666c-.251.703-.936 1.288-1.638 1.516-.449.146-1.066.261-2.174-.176-2.323-.919-3.939-3.247-4.359-3.744-.049-.058-.169-.192-.169-.364 0-.182.093-.271.174-.362.079-.088 1.714-1.997 2.002-2.686.064-.153.273-.242.426-.178.153.064 3.066 1.448 3.666 1.733.064.031.119.061.158.092.064.051.101.148.101.244 0 .096-.038.191-.102.242-.144.115-.372.291-.638.498z"/>
+            </svg>
+            Share to WhatsApp
+        </button>
+    </div>
     <p id="message"></p>
 </div>
 
@@ -304,13 +358,41 @@
         </div>
     </div>
     
+    <!-- Date Range Filter -->
+    <div class="date-filter">
+        <h3 style="margin-top:0;color:var(--primary);">Filter by Registration Period</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>From Date</label>
+                <input type="date" id="filterFromDate">
+            </div>
+            <div class="form-group">
+                <label>To Date</label>
+                <input type="date" id="filterToDate">
+            </div>
+            <div class="form-group">
+                <label>Quick Filter</label>
+                <select id="quickDateFilter" onchange="applyQuickDateFilter()">
+                    <option value="">Select...</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
     <div class="filters">
         <select id="filterTab">
             <option value="TISA_General">TISA / General</option>
             <option value="TechInSchools">Tech in Schools</option>
             <option value="TechInChurches">Tech in Churches</option>
         </select>
-        <input type="text" id="filterName" placeholder="Search by Name...">
+        <div style="position: relative; flex: 1; min-width: 150px;">
+            <input type="text" id="filterName" placeholder="Search by Name, Phone or Email..." oninput="searchStudents()">
+            <div id="searchSuggestions" class="search-suggestions hidden"></div>
+        </div>
         <select id="filterBranch">
             <option value="">All Branches</option>
             <option>Main Hub (Isawo Road)</option><option>Branch 2 (IGB)</option>
@@ -324,12 +406,26 @@
     <div id="tableContainer">Click 'Filter' to load data.</div>
 </div>
 
+<!-- Edit Student Modal -->
+<div id="editModal" class="edit-modal hidden">
+    <div class="edit-modal-content">
+        <h2 style="color:var(--primary);">Edit Student Details</h2>
+        <div id="editFormContent"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+            <button class="btn btn-success" onclick="saveStudentEdit()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec'; // Replace with your actual script URL
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec';
     const ADMIN_PASSWORD = 'TSTA2024'; 
     const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/E43TEvdrbua4jStVH8uBse';
     let currentPreviewData = null;
     let currentPassportBase64 = '';
+    let currentStudentData = null;
+    let allStudentsData = [];
 
     function showView(viewName) {
         document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
@@ -406,32 +502,40 @@
         const isTIS = document.getElementById('channel').value === 'Tech in Schools';
         const age = isTIS ? 15 : calculateAge(document.getElementById('dob').value);
         const isMinor = age < 16;
+        const agreedPayment = parseFloat(document.getElementById('agreedPayment').value) || 0;
+        const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+        const balance = agreedPayment - amountPaid;
         
         currentPreviewData = {
-            isTIS, isMinor, age,
+            isTIS, isMinor, age, balance,
             channel: document.getElementById('channel').value,
             branch: document.getElementById('branch').value,
             course: document.getElementById('course').value,
             duration: document.getElementById('duration').value,
-            amountPaid: document.getElementById('amountPaid').value,
+            amountPaid: amountPaid,
+            agreedPayment: agreedPayment,
             payOption: document.getElementById('payOption').value,
             paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
         };
         
-        generateStudentDataPage(isTIS, isMinor);
-        generateAdmissionLetterPage(isTIS, isMinor);
+        generateStudentDataPage(isTIS, isMinor, balance);
+        generateAdmissionLetterPage(isTIS, isMinor, balance);
         generatePolicyPage();
         
         showView('preview');
     }
     
-    function generateStudentDataPage(isTIS, isMinor) {
+    function generateStudentDataPage(isTIS, isMinor, balance) {
         const fullName = isTIS ? 
             document.getElementById('studentFullName').value :
             `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
         
         const passportImg = currentPassportBase64 ? 
             `<img src="${currentPassportBase64}" class="passport-img" alt="Passport">` : '';
+        
+        const balanceText = balance > 0 ? 
+            `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #ff0000;"><strong>Balance:</strong></td><td style="color: #ff0000;">₦${balance} (Due within 4 weeks)</td></tr>` : 
+            `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #00aa00;"><strong>Balance:</strong></td><td style="color: #00aa00;">₦0 (Fully Paid)</td></tr>`;
         
         let html = `
             ${passportImg}
@@ -441,7 +545,9 @@
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Course:</strong></td><td>${document.getElementById('course').value}</td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Branch:</strong></td><td>${document.getElementById('branch').value}</td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Duration:</strong></td><td>${document.getElementById('duration').value}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td>₦${document.getElementById('amountPaid').value}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Total Fee:</strong></td><td>₦${agreedPayment}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td>₦${amountPaid}</td></tr>
+                ${balanceText}
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Registration Date:</strong></td><td>${new Date().toLocaleDateString()}</td></tr>
             </table>
         `;
@@ -450,12 +556,13 @@
         document.getElementById('genDate1').textContent = new Date().toLocaleString();
     }
     
-    function generateAdmissionLetterPage(isTIS, isMinor) {
+    function generateAdmissionLetterPage(isTIS, isMinor, balance) {
         const fullName = isTIS ? 
             document.getElementById('studentFullName').value :
             `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
         
         const recipientName = isMinor ? `Parent/Guardian of ${fullName}` : fullName;
+        const balanceText = balance > 0 ? `<p style="color: #ff0000;"><strong>Important:</strong> Outstanding balance of <strong>₦${balance}</strong> must be paid within 4 weeks from registration date.</p>` : '';
         
         const html = `
             <p style="font-size: 16px; margin-bottom: 30px;">
@@ -471,8 +578,11 @@
                 <p><strong>Course:</strong> ${document.getElementById('course').value}</p>
                 <p><strong>Branch:</strong> ${document.getElementById('branch').value}</p>
                 <p><strong>Duration:</strong> ${document.getElementById('duration').value}</p>
-                <p><strong>Payment:</strong> Initial payment of <strong>₦${document.getElementById('amountPaid').value}</strong> received</p>
+                <p><strong>Total Fee:</strong> ₦${agreedPayment}</p>
+                <p><strong>Amount Paid:</strong> ₦${amountPaid}</p>
+                ${balance > 0 ? `<p style="color: #ff0000;"><strong>Balance:</strong> ₦${balance} (Due within 4 weeks)</p>` : ''}
             </div>
+            ${balanceText}
             <p style="line-height: 1.6;">
                 We look forward to having you in class. Please arrive 15 minutes early for your first session.
             </p>
@@ -496,7 +606,7 @@
                 <p>Certificates will be awarded only upon 100% completion of the course and successful submission of the final project.</p>
                 
                 <h3 style="color: #004d99;">3. PAYMENT PLAN</h3>
-                <p>Installment plans are limited to a maximum of two (2) installments. The balance must be cleared before certificate issuance.</p>
+                <p>Installment plans are limited to a maximum of two (2) installments. <strong style="color: #ff0000;">The balance must be cleared within 4 weeks from registration date.</strong> Balance must be cleared before certificate issuance.</p>
                 
                 <h3 style="color: #004d99;">4. ASSIGNMENTS & PROJECTS</h3>
                 <p>All class assignments and projects MUST be submitted via the official TSTA Telegram Channel.</p>
@@ -598,7 +708,6 @@
         }
 
         try {
-            // FIXED: Using text/plain to avoid CORS preflight
             const response = await fetch(SCRIPT_URL, { 
                 method: 'POST',
                 body: JSON.stringify(formData)
@@ -607,19 +716,19 @@
             const result = await response.json();
             
             if (result.status === 'success') {
+                currentStudentData = result; // Store for WhatsApp sharing
+                
+                // Show WhatsApp and share buttons
+                document.getElementById('postSubmitActions').classList.remove('hidden');
+                
                 if (currentPreviewData.isTIS) {
-                    msg.innerHTML = `Registration Successful! <br><br>
-                        <div class="whatsapp-box">
-                            <p>Please add the Parent/Guardian to the official TIS WhatsApp Group:</p>
-                            <a href="${WHATSAPP_GROUP_LINK}" target="_blank">Click Here to Join WhatsApp Group</a>
-                        </div>`;
+                    msg.innerHTML = `Registration Successful!`;
                 } else {
                     msg.innerText = 'Registration Successful! Documents sent via email.';
                 }
                 msg.className = 'success';
                 document.getElementById('regForm').reset();
                 toggleFormMode();
-                setTimeout(() => showView('form'), 4000);
             } else {
                 throw new Error(result.message || 'Submission failed');
             }
@@ -629,6 +738,40 @@
         } finally { 
             btn.disabled = false; btn.innerText = 'Confirm & Submit'; 
         }
+    }
+    
+    function shareToWhatsApp() {
+        if (!currentStudentData) {
+            alert('No student data available for sharing');
+            return;
+        }
+        
+        const isTIS = currentStudentData.channel === 'Tech in Schools';
+        let phone = '';
+        let name = '';
+        
+        if (isTIS) {
+            phone = document.getElementById('parentPhone').value;
+            name = document.getElementById('studentFullName').value;
+        } else {
+            phone = document.getElementById('guardianPhone').value;
+            name = `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
+        }
+        
+        // Remove any non-digit characters from phone
+        phone = phone.replace(/\D/g, '');
+        
+        // Add country code if not present (assuming Nigeria +234)
+        if (phone.startsWith('0')) {
+            phone = '234' + phone.substring(1);
+        } else if (!phone.startsWith('234') && !phone.startsWith('+')) {
+            phone = '234' + phone;
+        }
+        
+        const message = `*TSTA ADMISSION CONFIRMATION*\n\nDear Parent/Guardian of *${name}*,\n\nYour ward has been successfully admitted into ${currentStudentData.course} at Tomstudio Tech Academy.\n\nBranch: ${currentStudentData.branch}\nAmount Paid: ₦${currentStudentData.amountPaid}\n\nPlease find attached the admission documents.\n\nThank you!`;
+        
+        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
     }
 
     function adminLogin() {
@@ -643,12 +786,17 @@
     async function loadStats() {
         try {
             const response = await fetch(`${SCRIPT_URL}?action=getStats`);
-            const stats = await response.json();
+            const text = await response.text();
             
-            document.getElementById('totalCount').textContent = stats.total || 0;
-            document.getElementById('generalCount').textContent = stats.TISA_General || 0;
-            document.getElementById('tisCount').textContent = stats.TechInSchools || 0;
-            document.getElementById('ticCount').textContent = stats.TechInChurches || 0;
+            try {
+                const stats = JSON.parse(text);
+                document.getElementById('totalCount').textContent = stats.total || 0;
+                document.getElementById('generalCount').textContent = stats.TISA_General || 0;
+                document.getElementById('tisCount').textContent = stats.TechInSchools || 0;
+                document.getElementById('ticCount').textContent = stats.TechInChurches || 0;
+            } catch (e) {
+                console.error('Stats parse error:', e, 'Response:', text);
+            }
         } catch (error) {
             console.error('Error loading stats:', error);
         }
@@ -657,19 +805,121 @@
     async function loadStudents() {
         document.getElementById('tableContainer').innerHTML = 'Loading data...';
         const tab = document.getElementById('filterTab').value;
+        const fromDate = document.getElementById('filterFromDate').value;
+        const toDate = document.getElementById('filterToDate').value;
+        
         try {
             const response = await fetch(`${SCRIPT_URL}?action=getStudents&tab=${tab}`);
-            const result = await response.json();
+            const text = await response.text();
             
-            if (result.status === 'success') {
-                renderTable(result.data, tab);
-            } else {
-                throw new Error('Invalid response');
+            try {
+                const result = JSON.parse(text);
+                
+                if (result.status === 'success') {
+                    allStudentsData = result.data;
+                    
+                    // Filter by date if specified
+                    let filteredData = result.data;
+                    if (fromDate || toDate) {
+                        filteredData = result.data.filter(s => {
+                            const regDate = new Date(s.Timestamp);
+                            const from = fromDate ? new Date(fromDate) : new Date('1900-01-01');
+                            const to = toDate ? new Date(toDate) : new Date('2100-12-31');
+                            return regDate >= from && regDate <= to;
+                        });
+                    }
+                    
+                    renderTable(filteredData, tab);
+                } else {
+                    throw new Error('Invalid response');
+                }
+            } catch (e) {
+                console.error('Parse error:', e, 'Response:', text);
+                document.getElementById('tableContainer').innerHTML = 'Error: Invalid data format';
             }
         } catch (error) {
             document.getElementById('tableContainer').innerHTML = 'Error loading data.';
             console.error('Load error:', error);
         }
+    }
+    
+    function applyQuickDateFilter() {
+        const filter = document.getElementById('quickDateFilter').value;
+        const today = new Date();
+        let fromDate, toDate = today;
+        
+        switch(filter) {
+            case 'today':
+                fromDate = today;
+                toDate = today;
+                break;
+            case 'week':
+                const dayOfWeek = today.getDay();
+                fromDate = new Date(today);
+                fromDate.setDate(today.getDate() - dayOfWeek);
+                break;
+            case 'month':
+                fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                break;
+            case 'year':
+                fromDate = new Date(today.getFullYear(), 0, 1);
+                break;
+            default:
+                fromDate = null;
+                toDate = null;
+        }
+        
+        if (fromDate) {
+            document.getElementById('filterFromDate').value = fromDate.toISOString().split('T')[0];
+            document.getElementById('filterToDate').value = toDate.toISOString().split('T')[0];
+        } else {
+            document.getElementById('filterFromDate').value = '';
+            document.getElementById('filterToDate').value = '';
+        }
+        
+        loadStudents();
+    }
+    
+    async function searchStudents() {
+        const query = document.getElementById('filterName').value.toLowerCase();
+        const suggestionsDiv = document.getElementById('searchSuggestions');
+        
+        if (query.length < 2) {
+            suggestionsDiv.classList.add('hidden');
+            return;
+        }
+        
+        if (allStudentsData.length === 0) {
+            await loadStudents();
+        }
+        
+        const tab = document.getElementById('filterTab').value;
+        const matches = allStudentsData.filter(s => {
+            const name = tab === 'TechInSchools' ? 
+                (s['Student Full Name'] || '').toLowerCase() : 
+                `${s.Surname || ''} ${s.FirstName || ''} ${s.MiddleName || ''}`.toLowerCase();
+            const phone = (s.Phone || s['Parent Phone'] || '').toString();
+            const email = (s.Email || s['Parent Email'] || '').toLowerCase();
+            
+            return name.includes(query) || phone.includes(query) || email.includes(query);
+        }).slice(0, 10);
+        
+        if (matches.length > 0) {
+            suggestionsDiv.innerHTML = matches.map(s => {
+                const name = tab === 'TechInSchools' ? s['Student Full Name'] : `${s.Title} ${s.Surname} ${s.FirstName}`;
+                const phone = s.Phone || s['Parent Phone'] || 'N/A';
+                return `<div onclick="selectStudent('${name}', '${phone}')">${name} - ${phone}</div>`;
+            }).join('');
+            suggestionsDiv.classList.remove('hidden');
+        } else {
+            suggestionsDiv.classList.add('hidden');
+        }
+    }
+    
+    function selectStudent(name, phone) {
+        document.getElementById('filterName').value = name;
+        document.getElementById('searchSuggestions').classList.add('hidden');
+        loadStudents();
     }
 
     function renderTable(data, tab) {
@@ -690,7 +940,7 @@
 
         let html = `<table><tr><th>Year</th><th>Branch</th><th>Name</th><th>Course</th>`;
         if (tab === 'TechInSchools') {
-            html += `<th>School</th><th>Class</th><th>Frequency</th><th>Paid (₦)</th><th>Status</th></tr>`;
+            html += `<th>School</th><th>Class</th><th>Frequency</th><th>Paid (₦)</th><th>Status</th><th>Action</th></tr>`;
             filtered.forEach(s => {
                 html += `<tr>
                     <td>${s.Year || ''}</td>
@@ -701,27 +951,109 @@
                     <td>${s['Class/Grade'] || ''}</td>
                     <td>${s['Payment Frequency'] || ''}</td>
                     <td>${s['Amount Paid'] || ''}</td>
-                    <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td>
+                    <td><span class="${s['Payment Status'] === 'Paid' ? 'status-paid' : 'status-pending'}">${s['Payment Status'] || 'Pending'}</span></td>
+                    <td><button class="btn btn-info" style="padding:5px 10px;font-size:12px;" onclick="editStudent('${tab}', ${s.RowNumber})">Edit</button></td>
                 </tr>`;
             });
         } else {
-            html += `<th>Batch</th><th>Total (₦)</th><th>Paid (₦)</th><th>Method</th><th>Status</th></tr>`;
+            html += `<th>Batch</th><th>Total ()</th><th>Paid (₦)</th><th>Balance (₦)</th><th>Method</th><th>Status</th><th>Action</th></tr>`;
             filtered.forEach(s => {
+                const total = parseFloat(s['Agreed Payment']) || 0;
+                const paid = parseFloat(s['Amount Paid']) || 0;
+                const balance = total - paid;
                 html += `<tr>
                     <td>${s.Year || ''}</td>
                     <td>${s.Branch || ''}</td>
                     <td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td>
                     <td>${s['Course Applied For'] || ''}</td>
                     <td>${s.Batch || ''}</td>
-                    <td>${s['Agreed Payment'] || ''}</td>
-                    <td>${s['Amount Paid'] || ''}</td>
+                    <td>${total}</td>
+                    <td>${paid}</td>
+                    <td style="color: ${balance > 0 ? 'red' : 'green'}">${balance}</td>
                     <td>${s['Payment Method'] || 'N/A'}</td>
-                    <td class="${s['Payment Status'] === 'Pending' ? 'status-pending' : 'status-paid'}">${s['Payment Status'] || 'Paid'}</td>
+                    <td><span class="${s['Payment Status'] === 'Paid' ? 'status-paid' : 'status-pending'}">${s['Payment Status'] || 'Pending'}</span></td>
+                    <td><button class="btn btn-info" style="padding:5px 10px;font-size:12px;" onclick="editStudent('${tab}', ${s.RowNumber})">Edit</button></td>
                 </tr>`;
             });
         }
         html += `</table>`;
         document.getElementById('tableContainer').innerHTML = html;
+    }
+    
+    async function editStudent(tab, rowNum) {
+        try {
+            const response = await fetch(`${SCRIPT_URL}?action=getStudentByRow&tab=${tab}&rowNum=${rowNum}`);
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                const student = result.data;
+                currentStudentData = { tab, rowNum, data: student };
+                
+                const isTIS = tab === 'TechInSchools';
+                let formHtml = '';
+                
+                if (isTIS) {
+                    formHtml = `
+                        <div class="form-group"><label>Student Name</label><input type="text" id="editStudentName" value="${student['Student Full Name'] || ''}" readonly></div>
+                        <div class="form-group"><label>School</label><input type="text" value="${student['School Name'] || ''}" readonly></div>
+                        <div class="form-group"><label>Course</label><input type="text" value="${student.Course || ''}" readonly></div>
+                        <div class="form-group"><label>Amount Paid (₦)</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
+                    `;
+                } else {
+                    const balance = (parseFloat(student['Agreed Payment']) || 0) - (parseFloat(student['Amount Paid']) || 0);
+                    formHtml = `
+                        <div class="form-group"><label>Full Name</label><input type="text" value="${student.Title} ${student.Surname} ${student.FirstName}" readonly></div>
+                        <div class="form-group"><label>Course</label><input type="text" value="${student['Course Applied For'] || ''}" readonly></div>
+                        <div class="form-group"><label>Total Fee (₦)</label><input type="number" value="${student['Agreed Payment'] || 0}" readonly></div>
+                        <div class="form-group"><label>Amount Paid ()</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
+                        <div class="form-group"><label>Balance (₦)</label><input type="number" value="${balance}" readonly style="color: ${balance > 0 ? 'red' : 'green'}"></div>
+                        <div class="form-group"><label>Payment Status</label><select id="editPaymentStatus"><option value="Pending" ${student['Payment Status'] === 'Pending' ? 'selected' : ''}>Pending</option><option value="Paid" ${student['Payment Status'] === 'Paid' ? 'selected' : ''}>Paid</option></select></div>
+                    `;
+                }
+                
+                document.getElementById('editFormContent').innerHTML = formHtml;
+                document.getElementById('editModal').classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error loading student:', error);
+            alert('Error loading student data');
+        }
+    }
+    
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        currentStudentData = null;
+    }
+    
+    async function saveStudentEdit() {
+        if (!currentStudentData) return;
+        
+        const amountPaid = document.getElementById('editAmountPaid').value;
+        let status = 'Pending';
+        
+        if (currentStudentData.tab !== 'TechInSchools') {
+            status = document.getElementById('editPaymentStatus').value;
+        } else {
+            const total = parseFloat(currentStudentData.data['Agreed Payment']) || 0;
+            status = parseFloat(amountPaid) >= total ? 'Paid' : 'Pending';
+        }
+        
+        try {
+            const response = await fetch(`${SCRIPT_URL}?action=updatePayment&tab=${currentStudentData.tab}&rowNum=${currentStudentData.rowNum}&amountPaid=${amountPaid}&status=${status}`);
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                alert('Student details updated successfully!');
+                closeEditModal();
+                loadStudents();
+                loadStats();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            console.error('Update error:', error);
+            alert('Error updating student: ' + error.message);
+        }
     }
     
     function exportToCSV() {
@@ -771,6 +1103,13 @@
 
     // Initialize on load
     toggleFormMode();
+    
+    // Close search suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#filterName')) {
+            document.getElementById('searchSuggestions').classList.add('hidden');
+        }
+    });
 </script>
 </body>
 </html>
