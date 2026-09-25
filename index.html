@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSTA Registration Portal</title>
     <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/html2canvas/1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root { --primary: #004d99; --secondary: #0073e6; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 0; }
@@ -512,7 +512,6 @@
             paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
         };
         
-        // FIXED: Pass all required data to functions
         generateStudentDataPage(isTIS, isMinor, balance, agreedPayment, amountPaid);
         generateAdmissionLetterPage(isTIS, isMinor, balance, agreedPayment, amountPaid);
         generatePolicyPage();
@@ -520,7 +519,6 @@
         showView('preview');
     }
     
-    // FIXED: Added agreedPayment and amountPaid as parameters
     function generateStudentDataPage(isTIS, isMinor, balance, agreedPayment, amountPaid) {
         const fullName = isTIS ? 
             document.getElementById('studentFullName').value :
@@ -552,7 +550,6 @@
         document.getElementById('genDate1').textContent = new Date().toLocaleString();
     }
     
-    // FIXED: Added agreedPayment and amountPaid as parameters
     function generateAdmissionLetterPage(isTIS, isMinor, balance, agreedPayment, amountPaid) {
         const fullName = isTIS ? 
             document.getElementById('studentFullName').value :
@@ -577,7 +574,7 @@
                 <p><strong>Duration:</strong> ${document.getElementById('duration').value}</p>
                 <p><strong>Total Fee:</strong> ₦${agreedPayment.toLocaleString()}</p>
                 <p><strong>Amount Paid:</strong> ₦${amountPaid.toLocaleString()}</p>
-                ${balance > 0 ? `<p style="color: #ff0000;"><strong>Balance:</strong> ₦${balance.toLocaleString()} (Due within 4 weeks)</p>` : ''}
+                ${balance > 0 ? `<p style="color: #ff0000;"><strong>Balance:</strong> ${balance.toLocaleString()} (Due within 4 weeks)</p>` : ''}
             </div>
             ${balanceText}
             <p style="line-height: 1.6;">
@@ -641,8 +638,9 @@
                 pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
             }
             
+            // FIXED: Generate proper filename with student name
             const studentName = currentPreviewData.isTIS ? 
-                document.getElementById('studentFullName').value :
+                document.getElementById('studentFullName').value.replace(/\s+/g, '_') :
                 `${document.getElementById('surname').value}_${document.getElementById('firstName').value}`;
             
             pdf.save(`TSTA_${studentName}_Documents.pdf`);
@@ -713,7 +711,16 @@
             const result = await response.json();
             
             if (result.status === 'success') {
-                currentStudentData = result;
+                // FIXED: Store complete student data for WhatsApp sharing
+                currentStudentData = {
+                    channel: formData.channel,
+                    branch: formData.branch,
+                    course: formData.course,
+                    amountPaid: formData.amountPaid,
+                    studentName: formData.isTIS ? formData.studentFullName : `${formData.title} ${formData.surname} ${formData.firstName}`,
+                    phone: formData.isTIS ? formData.parentPhone : formData.guardianPhone
+                };
+                
                 document.getElementById('postSubmitActions').classList.remove('hidden');
                 
                 if (currentPreviewData.isTIS) {
@@ -735,34 +742,20 @@
         }
     }
     
+    // FIXED: WhatsApp share function with proper data
     function shareToWhatsApp() {
         if (!currentStudentData) {
             alert('No student data available for sharing');
             return;
         }
         
-        const isTIS = currentStudentData.channel === 'Tech in Schools';
-        let phone = '';
-        let name = '';
+        const phone = currentStudentData.phone.replace(/\D/g, '');
+        const formattedPhone = phone.startsWith('0') ? '234' + phone.substring(1) : 
+                               phone.startsWith('234') || phone.startsWith('+') ? phone : '234' + phone;
         
-        if (isTIS) {
-            phone = document.getElementById('parentPhone').value;
-            name = document.getElementById('studentFullName').value;
-        } else {
-            phone = document.getElementById('guardianPhone').value;
-            name = `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
-        }
+        const message = `*TSTA ADMISSION CONFIRMATION*\n\nDear Parent/Guardian of *${currentStudentData.studentName}*,\n\nYour ward has been successfully admitted into *${currentStudentData.course}* at Tomstudio Tech Academy.\n\nBranch: ${currentStudentData.branch}\nAmount Paid: ₦${parseFloat(currentStudentData.amountPaid).toLocaleString()}\n\nPlease find attached the admission documents.\n\nThank you!`;
         
-        phone = phone.replace(/\D/g, '');
-        if (phone.startsWith('0')) {
-            phone = '234' + phone.substring(1);
-        } else if (!phone.startsWith('234') && !phone.startsWith('+')) {
-            phone = '234' + phone;
-        }
-        
-        const message = `*TSTA ADMISSION CONFIRMATION*\n\nDear Parent/Guardian of *${name}*,\n\nYour ward has been successfully admitted into ${currentStudentData.course} at Tomstudio Tech Academy.\n\nBranch: ${currentStudentData.branch}\nAmount Paid: ₦${currentStudentData.amountPaid}\n\nPlease find attached the admission documents.\n\nThank you!`;
-        
-        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+        const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
     }
 
@@ -788,7 +781,6 @@
                 document.getElementById('ticCount').textContent = stats.TechInChurches || 0;
             } catch (e) {
                 console.error('Stats parse error:', e, 'Response:', text);
-                // Set to 0 if parsing fails
                 document.getElementById('totalCount').textContent = '0';
                 document.getElementById('generalCount').textContent = '0';
                 document.getElementById('tisCount').textContent = '0';
@@ -944,13 +936,13 @@
             html += `<th>School</th><th>Class</th><th>Frequency</th><th>Paid (₦)</th><th>Status</th><th>Action</th></tr>`;
             filtered.forEach(s => {
                 html += `<tr>
-                    <td>${s.Year || ''}</td>
-                    <td>${s.Branch || ''}</td>
-                    <td>${s['Student Full Name'] || ''}</td>
-                    <td>${s.Course || ''}</td>
+                    <td>${s.Year || 'N/A'}</td>
+                    <td>${s.Branch || 'N/A'}</td>
+                    <td>${s['Student Full Name'] || 'N/A'}</td>
+                    <td>${s.Course || 'N/A'}</td>
                     <td>${s['School Name'] || 'N/A'}</td>
-                    <td>${s['Class/Grade'] || ''}</td>
-                    <td>${s['Payment Frequency'] || ''}</td>
+                    <td>${s['Class/Grade'] || 'N/A'}</td>
+                    <td>${s['Payment Frequency'] || 'N/A'}</td>
                     <td>₦${parseFloat(s['Amount Paid'] || 0).toLocaleString()}</td>
                     <td><span class="${s['Payment Status'] === 'Paid' ? 'status-paid' : 'status-pending'}">${s['Payment Status'] || 'Pending'}</span></td>
                     <td><button class="btn btn-info" style="padding:5px 10px;font-size:12px;" onclick="editStudent('${tab}', ${s.RowNumber})">Edit</button></td>
@@ -963,11 +955,11 @@
                 const paid = parseFloat(s['Amount Paid']) || 0;
                 const balance = total - paid;
                 html += `<tr>
-                    <td>${s.Year || ''}</td>
-                    <td>${s.Branch || ''}</td>
+                    <td>${s.Year || 'N/A'}</td>
+                    <td>${s.Branch || 'N/A'}</td>
                     <td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td>
-                    <td>${s['Course Applied For'] || ''}</td>
-                    <td>${s.Batch || ''}</td>
+                    <td>${s['Course Applied For'] || 'N/A'}</td>
+                    <td>${s.Batch || 'N/A'}</td>
                     <td>₦${total.toLocaleString()}</td>
                     <td>₦${paid.toLocaleString()}</td>
                     <td style="color: ${balance > 0 ? 'red' : 'green'}">₦${balance.toLocaleString()}</td>
