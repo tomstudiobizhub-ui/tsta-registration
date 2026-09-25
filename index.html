@@ -6,12 +6,6 @@
     <title>TSTA Registration Portal</title>
     <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script>
-        if (typeof window.jspdf === 'undefined') {
-            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>');
-            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
-        }
-    </script>
     <style>
         :root { --primary: #004d99; --secondary: #0073e6; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 0; }
@@ -248,7 +242,7 @@
                     <option>Cash</option><option>Transfer (TRF)</option>
                 </select>
             </div>
-            <div class="form-group"><label>Amount Paid Now (₦)</label><input type="number" id="amountPaid" required></div>
+            <div class="form-group"><label>Amount Paid Now ()</label><input type="number" id="amountPaid" required></div>
             <div class="form-group" id="passportGroup"><label>Passport Photo (Optional)</label><input type="file" id="passport" accept="image/*"></div>
         </div>
 
@@ -518,14 +512,16 @@
             paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
         };
         
-        generateStudentDataPage(isTIS, isMinor, balance);
-        generateAdmissionLetterPage(isTIS, isMinor, balance);
+        // FIXED: Pass all required data to functions
+        generateStudentDataPage(isTIS, isMinor, balance, agreedPayment, amountPaid);
+        generateAdmissionLetterPage(isTIS, isMinor, balance, agreedPayment, amountPaid);
         generatePolicyPage();
         
         showView('preview');
     }
     
-    function generateStudentDataPage(isTIS, isMinor, balance) {
+    // FIXED: Added agreedPayment and amountPaid as parameters
+    function generateStudentDataPage(isTIS, isMinor, balance, agreedPayment, amountPaid) {
         const fullName = isTIS ? 
             document.getElementById('studentFullName').value :
             `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
@@ -534,7 +530,7 @@
             `<img src="${currentPassportBase64}" class="passport-img" alt="Passport">` : '';
         
         const balanceText = balance > 0 ? 
-            `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #ff0000;"><strong>Balance:</strong></td><td style="color: #ff0000;">₦${balance} (Due within 4 weeks)</td></tr>` : 
+            `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #ff0000;"><strong>Balance:</strong></td><td style="color: #ff0000;">₦${balance.toLocaleString()} (Due within 4 weeks)</td></tr>` : 
             `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #00aa00;"><strong>Balance:</strong></td><td style="color: #00aa00;">₦0 (Fully Paid)</td></tr>`;
         
         let html = `
@@ -545,8 +541,8 @@
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Course:</strong></td><td>${document.getElementById('course').value}</td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Branch:</strong></td><td>${document.getElementById('branch').value}</td></tr>
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Duration:</strong></td><td>${document.getElementById('duration').value}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Total Fee:</strong></td><td>₦${agreedPayment}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td>₦${amountPaid}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Total Fee:</strong></td><td>₦${agreedPayment.toLocaleString()}</td></tr>
+                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td>₦${amountPaid.toLocaleString()}</td></tr>
                 ${balanceText}
                 <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Registration Date:</strong></td><td>${new Date().toLocaleDateString()}</td></tr>
             </table>
@@ -556,13 +552,14 @@
         document.getElementById('genDate1').textContent = new Date().toLocaleString();
     }
     
-    function generateAdmissionLetterPage(isTIS, isMinor, balance) {
+    // FIXED: Added agreedPayment and amountPaid as parameters
+    function generateAdmissionLetterPage(isTIS, isMinor, balance, agreedPayment, amountPaid) {
         const fullName = isTIS ? 
             document.getElementById('studentFullName').value :
             `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
         
         const recipientName = isMinor ? `Parent/Guardian of ${fullName}` : fullName;
-        const balanceText = balance > 0 ? `<p style="color: #ff0000;"><strong>Important:</strong> Outstanding balance of <strong>₦${balance}</strong> must be paid within 4 weeks from registration date.</p>` : '';
+        const balanceText = balance > 0 ? `<p style="color: #ff0000;"><strong>Important:</strong> Outstanding balance of <strong>₦${balance.toLocaleString()}</strong> must be paid within 4 weeks from registration date.</p>` : '';
         
         const html = `
             <p style="font-size: 16px; margin-bottom: 30px;">
@@ -578,9 +575,9 @@
                 <p><strong>Course:</strong> ${document.getElementById('course').value}</p>
                 <p><strong>Branch:</strong> ${document.getElementById('branch').value}</p>
                 <p><strong>Duration:</strong> ${document.getElementById('duration').value}</p>
-                <p><strong>Total Fee:</strong> ₦${agreedPayment}</p>
-                <p><strong>Amount Paid:</strong> ₦${amountPaid}</p>
-                ${balance > 0 ? `<p style="color: #ff0000;"><strong>Balance:</strong> ₦${balance} (Due within 4 weeks)</p>` : ''}
+                <p><strong>Total Fee:</strong> ₦${agreedPayment.toLocaleString()}</p>
+                <p><strong>Amount Paid:</strong> ₦${amountPaid.toLocaleString()}</p>
+                ${balance > 0 ? `<p style="color: #ff0000;"><strong>Balance:</strong> ₦${balance.toLocaleString()} (Due within 4 weeks)</p>` : ''}
             </div>
             ${balanceText}
             <p style="line-height: 1.6;">
@@ -716,9 +713,7 @@
             const result = await response.json();
             
             if (result.status === 'success') {
-                currentStudentData = result; // Store for WhatsApp sharing
-                
-                // Show WhatsApp and share buttons
+                currentStudentData = result;
                 document.getElementById('postSubmitActions').classList.remove('hidden');
                 
                 if (currentPreviewData.isTIS) {
@@ -758,10 +753,7 @@
             name = `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
         }
         
-        // Remove any non-digit characters from phone
         phone = phone.replace(/\D/g, '');
-        
-        // Add country code if not present (assuming Nigeria +234)
         if (phone.startsWith('0')) {
             phone = '234' + phone.substring(1);
         } else if (!phone.startsWith('234') && !phone.startsWith('+')) {
@@ -796,20 +788,30 @@
                 document.getElementById('ticCount').textContent = stats.TechInChurches || 0;
             } catch (e) {
                 console.error('Stats parse error:', e, 'Response:', text);
+                // Set to 0 if parsing fails
+                document.getElementById('totalCount').textContent = '0';
+                document.getElementById('generalCount').textContent = '0';
+                document.getElementById('tisCount').textContent = '0';
+                document.getElementById('ticCount').textContent = '0';
             }
         } catch (error) {
             console.error('Error loading stats:', error);
+            document.getElementById('totalCount').textContent = '0';
+            document.getElementById('generalCount').textContent = '0';
+            document.getElementById('tisCount').textContent = '0';
+            document.getElementById('ticCount').textContent = '0';
         }
     }
 
     async function loadStudents() {
-        document.getElementById('tableContainer').innerHTML = 'Loading data...';
+        document.getElementById('tableContainer').innerHTML = '<p>Loading data...</p>';
         const tab = document.getElementById('filterTab').value;
         const fromDate = document.getElementById('filterFromDate').value;
         const toDate = document.getElementById('filterToDate').value;
         
         try {
-            const response = await fetch(`${SCRIPT_URL}?action=getStudents&tab=${tab}`);
+            const url = `${SCRIPT_URL}?action=getStudents&tab=${tab}`;
+            const response = await fetch(url);
             const text = await response.text();
             
             try {
@@ -818,7 +820,6 @@
                 if (result.status === 'success') {
                     allStudentsData = result.data;
                     
-                    // Filter by date if specified
                     let filteredData = result.data;
                     if (fromDate || toDate) {
                         filteredData = result.data.filter(s => {
@@ -835,11 +836,11 @@
                 }
             } catch (e) {
                 console.error('Parse error:', e, 'Response:', text);
-                document.getElementById('tableContainer').innerHTML = 'Error: Invalid data format';
+                document.getElementById('tableContainer').innerHTML = '<p>Error: Invalid data format received from server</p>';
             }
         } catch (error) {
-            document.getElementById('tableContainer').innerHTML = 'Error loading data.';
             console.error('Load error:', error);
+            document.getElementById('tableContainer').innerHTML = '<p>Error loading data. Please check your internet connection.</p>';
         }
     }
     
@@ -950,13 +951,13 @@
                     <td>${s['School Name'] || 'N/A'}</td>
                     <td>${s['Class/Grade'] || ''}</td>
                     <td>${s['Payment Frequency'] || ''}</td>
-                    <td>${s['Amount Paid'] || ''}</td>
+                    <td>₦${parseFloat(s['Amount Paid'] || 0).toLocaleString()}</td>
                     <td><span class="${s['Payment Status'] === 'Paid' ? 'status-paid' : 'status-pending'}">${s['Payment Status'] || 'Pending'}</span></td>
                     <td><button class="btn btn-info" style="padding:5px 10px;font-size:12px;" onclick="editStudent('${tab}', ${s.RowNumber})">Edit</button></td>
                 </tr>`;
             });
         } else {
-            html += `<th>Batch</th><th>Total ()</th><th>Paid (₦)</th><th>Balance (₦)</th><th>Method</th><th>Status</th><th>Action</th></tr>`;
+            html += `<th>Batch</th><th>Total (₦)</th><th>Paid (₦)</th><th>Balance (₦)</th><th>Method</th><th>Status</th><th>Action</th></tr>`;
             filtered.forEach(s => {
                 const total = parseFloat(s['Agreed Payment']) || 0;
                 const paid = parseFloat(s['Amount Paid']) || 0;
@@ -967,9 +968,9 @@
                     <td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td>
                     <td>${s['Course Applied For'] || ''}</td>
                     <td>${s.Batch || ''}</td>
-                    <td>${total}</td>
-                    <td>${paid}</td>
-                    <td style="color: ${balance > 0 ? 'red' : 'green'}">${balance}</td>
+                    <td>₦${total.toLocaleString()}</td>
+                    <td>₦${paid.toLocaleString()}</td>
+                    <td style="color: ${balance > 0 ? 'red' : 'green'}">₦${balance.toLocaleString()}</td>
                     <td>${s['Payment Method'] || 'N/A'}</td>
                     <td><span class="${s['Payment Status'] === 'Paid' ? 'status-paid' : 'status-pending'}">${s['Payment Status'] || 'Pending'}</span></td>
                     <td><button class="btn btn-info" style="padding:5px 10px;font-size:12px;" onclick="editStudent('${tab}', ${s.RowNumber})">Edit</button></td>
@@ -997,7 +998,7 @@
                         <div class="form-group"><label>Student Name</label><input type="text" id="editStudentName" value="${student['Student Full Name'] || ''}" readonly></div>
                         <div class="form-group"><label>School</label><input type="text" value="${student['School Name'] || ''}" readonly></div>
                         <div class="form-group"><label>Course</label><input type="text" value="${student.Course || ''}" readonly></div>
-                        <div class="form-group"><label>Amount Paid (₦)</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
+                        <div class="form-group"><label>Amount Paid ()</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
                     `;
                 } else {
                     const balance = (parseFloat(student['Agreed Payment']) || 0) - (parseFloat(student['Amount Paid']) || 0);
@@ -1005,7 +1006,7 @@
                         <div class="form-group"><label>Full Name</label><input type="text" value="${student.Title} ${student.Surname} ${student.FirstName}" readonly></div>
                         <div class="form-group"><label>Course</label><input type="text" value="${student['Course Applied For'] || ''}" readonly></div>
                         <div class="form-group"><label>Total Fee (₦)</label><input type="number" value="${student['Agreed Payment'] || 0}" readonly></div>
-                        <div class="form-group"><label>Amount Paid ()</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
+                        <div class="form-group"><label>Amount Paid (₦)</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
                         <div class="form-group"><label>Balance (₦)</label><input type="number" value="${balance}" readonly style="color: ${balance > 0 ? 'red' : 'green'}"></div>
                         <div class="form-group"><label>Payment Status</label><select id="editPaymentStatus"><option value="Pending" ${student['Payment Status'] === 'Pending' ? 'selected' : ''}>Pending</option><option value="Paid" ${student['Payment Status'] === 'Paid' ? 'selected' : ''}>Paid</option></select></div>
                     `;
