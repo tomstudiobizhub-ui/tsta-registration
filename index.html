@@ -957,6 +957,190 @@
     document.addEventListener('click', function(e) {
         if (!e.target.closest('#filterName')) document.getElementById('searchSuggestions').classList.add('hidden');
     });
+    function filterAndRenderTable() {
+    const branchFilter = document.getElementById('filterBranch').value.toLowerCase();
+    const nameFilter = document.getElementById('filterName').value.toLowerCase();
+    const fromDate = document.getElementById('filterFromDate').value;
+    const toDate = document.getElementById('filterToDate').value;
+
+    let filtered = allStudentsData.filter(student => {
+        // Match branch
+        const studentBranch = (student.branch || student.Branch || '').toLowerCase();
+        if (branchFilter && !studentBranch.includes(branchFilter)) return false;
+
+        // Match name, phone or email search
+        const fullName = (student.fullName || student.FullName || student.surname || '' + ' ' + (student.firstName || '')).toLowerCase();
+        const phone = (student.phone || student.Phone || '').toLowerCase();
+        const email = (student.email || student.Email || '').toLowerCase();
+        
+        if (nameFilter && !fullName.includes(nameFilter) && !phone.includes(nameFilter) && !email.includes(nameFilter)) {
+            return false;
+        }
+
+        // Match date range
+        const regDateStr = student.timestamp || student.Timestamp || student.date || '';
+        if (regDateStr && (fromDate || toDate)) {
+            const regDate = new Date(regDateStr);
+            if (fromDate && regDate < new Date(fromDate)) return false;
+            if (toDate) {
+                const endOfDay = new Date(toDate);
+                endOfDay.setHours(23, 59, 59);
+                if (regDate > endOfDay) return false;
+            }
+        }
+
+        return true;
+    });
+
+    renderTable(filtered);
+}
+
+function renderTable(data) {
+    const tableContainer = document.getElementById('tableContainer');
+    
+    if (!data || data.length === 0) {
+        tableContainer.innerHTML = '<p style="text-align:center; padding: 20px;">No student records found matching your criteria.</p>';
+        return;
+    }
+
+    let html = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Passport</th>
+                    <th>Full Name</th>
+                    <th>Channel</th>
+                    <th>Course</th>
+                    <th>Branch</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    data.forEach(student => {
+        const passport = student.passport || student.Passport || '';
+        const passportImg = passport ? `<img src="${passport}" class="table-passport" alt="Photo">` : 'N/A';
+        const fullName = student.fullName || student.FullName || `${student.surname || ''} ${student.firstName || ''}`;
+        const channel = student.channel || student.Channel || 'TISA_General';
+        const course = student.course || student.Course || 'N/A';
+        const branch = student.branch || student.Branch || 'N/A';
+        const phone = student.phone || student.Phone || 'N/A';
+        const balance = parseFloat(student.balance || student.Balance || 0);
+        const statusClass = balance <= 0 ? 'status-paid' : 'status-pending';
+        const statusText = balance <= 0 ? 'Paid' : `Bal: ₦${balance.toLocaleString()}`;
+
+        html += `
+            <tr>
+                <td>${passportImg}</td>
+                <td>${fullName}</td>
+                <td>${channel}</td>
+                <td>${course}</td>
+                <td>${branch}</td>
+                <td>${phone}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    tableContainer.innerHTML = html;
+}
+
+function searchStudents() {
+    const query = document.getElementById('filterName').value.toLowerCase();
+    const suggestionsBox = document.getElementById('searchSuggestions');
+    
+    if (!query || query.length < 2) {
+        suggestionsBox.classList.add('hidden');
+        filterAndRenderTable();
+        return;
+    }
+
+    const matches = allStudentsData.filter(student => {
+        const fullName = (student.fullName || student.FullName || `${student.surname || ''} ${student.firstName || ''}`).toLowerCase();
+        const phone = (student.phone || student.Phone || '').toLowerCase();
+        return fullName.includes(query) || phone.includes(query);
+    }).slice(0, 5);
+
+    if (matches.length > 0) {
+        let html = '';
+        matches.forEach(student => {
+            const name = student.fullName || student.FullName || `${student.surname || ''} ${student.firstName || ''}`;
+            const phone = student.phone || student.Phone || '';
+            html += `<div onclick="selectSuggestion('${name}')">${name} (${phone})</div>`;
+        });
+        suggestionsBox.innerHTML = html;
+        suggestionsBox.classList.remove('hidden');
+    } else {
+        suggestionsBox.classList.add('hidden');
+    }
+
+    filterAndRenderTable();
+}
+
+function selectSuggestion(name) {
+    document.getElementById('filterName').value = name;
+    document.getElementById('searchSuggestions').classList.add('hidden');
+    filterAndRenderTable();
+}
+
+function applyQuickDateFilter() {
+    const val = document.getElementById('quickDateFilter').value;
+    const today = new Date();
+    let from = '', to = '';
+
+    if (val === 'today') {
+        from = to = today.toISOString().split('T')[0];
+    } else if (val === 'week') {
+        const firstDay = new Date(today.setDate(today.getDate() - today.getDay()));
+        from = firstDay.toISOString().split('T')[0];
+        to = new Date().toISOString().split('T')[0];
+    } else if (val === 'month') {
+        from = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        to = new Date().toISOString().split('T')[0];
+    } else if (val === 'year') {
+        from = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+        to = new Date().toISOString().split('T')[0];
+    }
+
+    document.getElementById('filterFromDate').value = from;
+    document.getElementById('filterToDate').value = to;
+    filterAndRenderTable();
+}
+
+function exportToCSV() {
+    if (!allStudentsData || allStudentsData.length === 0) {
+        alert('No data available to export.');
+        return;
+    }
+
+    let csv = 'Full Name,Channel,Course,Branch,Phone,Email,Total Fee,Amount Paid,Balance\n';
+    
+    allStudentsData.forEach(s => {
+        const name = `"${s.fullName || s.FullName || (s.surname + ' ' + s.firstName) || ''}"`;
+        const channel = `"${s.channel || s.Channel || ''}"`;
+        const course = `"${s.course || s.Course || ''}"`;
+        const branch = `"${s.branch || s.Branch || ''}"`;
+        const phone = `"${s.phone || s.Phone || ''}"`;
+        const email = `"${s.email || s.Email || ''}"`;
+        const total = s.agreedPayment || s.AgreedPayment || 0;
+        const paid = s.amountPaid || s.AmountPaid || 0;
+        const bal = s.balance || s.Balance || (total - paid);
+
+        csv += `${name},${channel},${course},${branch},${phone},${email},${total},${paid},${bal}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.setAttribute('download', `TSTA_Students_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
 </script>
 </body>
 </html>
