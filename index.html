@@ -6,6 +6,7 @@
     <title>TSTA Registration Portal</title>
     <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html2canvas/1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root { --primary: #004d99; --secondary: #0073e6; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 0; }
@@ -118,6 +119,31 @@
             overflow-y: auto;
         }
         
+
+        .admin-section { margin-bottom: 24px; }
+        .admin-panel { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+        .admin-toolbar { display:grid; grid-template-columns:repeat(12,1fr); gap:12px; align-items:end; }
+        .admin-toolbar .field { grid-column:span 3; }
+        .admin-toolbar .field.search { grid-column:span 4; }
+        .admin-toolbar .actions { grid-column:span 5; display:flex; gap:8px; flex-wrap:wrap; }
+        .admin-toolbar .actions .btn { width:auto; flex:1; min-width:110px; margin-top:0; }
+        .stats-grid .stat-card { min-height:92px; display:flex; flex-direction:column; justify-content:center; }
+        .stats-grid .stat-card small { opacity:.85; margin-top:5px; }
+        .table-wrap { overflow:auto; border:1px solid #e5e7eb; border-radius:10px; }
+        .admin-table { margin-top:0; min-width:1050px; }
+        .admin-table th { position:sticky; top:0; z-index:1; }
+        .action-group { display:flex; gap:5px; flex-wrap:nowrap; }
+        .action-btn { border:0; border-radius:5px; padding:7px 9px; color:#fff; cursor:pointer; font-size:12px; font-weight:700; white-space:nowrap; }
+        .action-view { background:#17a2b8; }
+        .action-edit { background:#6c757d; }
+        .action-download { background:#28a745; }
+        .empty-state { padding:35px 15px; text-align:center; color:#6b7280; }
+        .search-suggestions { top:100%; left:0; }
+        .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 18px; }
+        .detail-item { background:#f8fafc; border:1px solid #e5e7eb; border-radius:7px; padding:10px; }
+        .detail-item strong { display:block; color:#004d99; font-size:12px; margin-bottom:4px; }
+        .modal-actions { display:flex; gap:8px; margin-top:18px; }
+        .modal-actions .btn { margin-top:0; }
         @media (max-width: 768px) {
             .form-grid { grid-template-columns: 1fr; }
             .container { margin: 10px; padding: 15px; }
@@ -329,75 +355,98 @@
 </div>
 
 <!-- VIEW 4: ADMIN DASHBOARD -->
-<div id="view-admin-dashboard" class="container hidden" style="max-width: 1200px;">
-    <h2>Student Records Dashboard</h2>
-    
-    <!-- Statistics -->
-    <div class="stats-grid" id="statsContainer">
-        <div class="stat-card">
-            <h3 id="totalCount">0</h3>
-            <p>Total Students</p>
-        </div>
-        <div class="stat-card">
-            <h3 id="generalCount">0</h3>
-            <p>General/TSTA</p>
-        </div>
-        <div class="stat-card">
-            <h3 id="tisCount">0</h3>
-            <p>Tech in Schools</p>
-        </div>
-        <div class="stat-card">
-            <h3 id="ticCount">0</h3>
-            <p>Tech in Churches</p>
+<div id="view-admin-dashboard" class="container hidden" style="max-width: 1250px;">
+    <div class="admin-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;">
+            <div>
+                <h2 style="margin-bottom:5px;">Student Records Dashboard</h2>
+                <p style="margin-top:0;color:#6b7280;">Search, view, edit payments, and download individual student records.</p>
+            </div>
+            <button class="btn btn-secondary" style="width:auto;margin-top:0;" onclick="adminLogout()">Logout</button>
         </div>
     </div>
-    
-    <!-- Date Range Filter -->
-    <div class="date-filter">
-        <h3 style="margin-top:0;color:var(--primary);">Filter by Registration Period</h3>
-        <div class="form-grid">
-            <div class="form-group">
-                <label>From Date</label>
-                <input type="date" id="filterFromDate">
-            </div>
-            <div class="form-group">
-                <label>To Date</label>
-                <input type="date" id="filterToDate">
-            </div>
-            <div class="form-group">
-                <label>Quick Filter</label>
-                <select id="quickDateFilter" onchange="applyQuickDateFilter()">
-                    <option value="">Select...</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="year">This Year</option>
+
+    <div class="admin-section">
+        <div class="stats-grid" id="statsContainer">
+            <div class="stat-card"><h3 id="totalCount">0</h3><p>Total Students</p><small>All registration tabs</small></div>
+            <div class="stat-card"><h3 id="generalCount">0</h3><p>General / TISA</p><small>TISA_General</small></div>
+            <div class="stat-card"><h3 id="tisCount">0</h3><p>Tech in Schools</p><small>TechInSchools</small></div>
+            <div class="stat-card"><h3 id="ticCount">0</h3><p>Tech in Churches</p><small>TechInChurches</small></div>
+        </div>
+    </div>
+
+    <div class="admin-section admin-panel">
+        <h3 style="margin-top:0;">Filters & Search</h3>
+        <div class="admin-toolbar">
+            <div class="field">
+                <label>Student Group</label>
+                <select id="filterTab" onchange="handleTabChange()">
+                    <option value="TISA_General">TISA / General</option>
+                    <option value="TechInSchools">Tech in Schools</option>
+                    <option value="TechInChurches">Tech in Churches</option>
                 </select>
             </div>
+            <div class="field search" style="position:relative;">
+                <label>Search Student</label>
+                <input type="text" id="filterName" placeholder="Name, phone or email..." oninput="searchStudents()">
+                <div id="searchSuggestions" class="search-suggestions hidden"></div>
+            </div>
+            <div class="field">
+                <label>Branch</label>
+                <select id="filterBranch" onchange="renderCurrentStudents()">
+                    <option value="">All Branches</option>
+                    <option>Main Hub (Isawo Road)</option><option>Branch 2 (IGB)</option>
+                    <option>Branch 3</option><option>Online/Virtual</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>From</label><input type="date" id="filterFromDate" onchange="renderCurrentStudents()">
+            </div>
+            <div class="field">
+                <label>To</label><input type="date" id="filterToDate" onchange="renderCurrentStudents()">
+            </div>
+            <div class="field">
+                <label>Quick Date</label>
+                <select id="quickDateFilter" onchange="applyQuickDateFilter()">
+                    <option value="">Select...</option><option value="today">Today</option>
+                    <option value="week">This Week</option><option value="month">This Month</option><option value="year">This Year</option>
+                </select>
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="loadStudents()">Refresh</button>
+                <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+                <button class="btn btn-info" onclick="exportToPDF()">Export PDF</button>
+            </div>
         </div>
     </div>
-    
-    <div class="filters">
-        <select id="filterTab">
-            <option value="TISA_General">TISA / General</option>
-            <option value="TechInSchools">Tech in Schools</option>
-            <option value="TechInChurches">Tech in Churches</option>
-        </select>
-        <div style="position: relative; flex: 1; min-width: 150px;">
-            <input type="text" id="filterName" placeholder="Search by Name, Phone or Email..." oninput="searchStudents()">
-            <div id="searchSuggestions" class="search-suggestions hidden"></div>
-        </div>
-        <select id="filterBranch">
-            <option value="">All Branches</option>
-            <option>Main Hub (Isawo Road)</option><option>Branch 2 (IGB)</option>
-            <option>Branch 3</option><option>Online/Virtual</option>
-        </select>
-        <button class="btn btn-primary" onclick="loadStudents()">Filter</button>
-        <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
-        <button class="btn btn-info" onclick="exportToPDF()">Export PDF</button>
-        <button class="btn btn-secondary" onclick="showView('form')">Logout</button>
+
+    <div id="tableContainer" class="admin-panel">
+        <div class="empty-state">Loading student records...</div>
     </div>
-    <div id="tableContainer">Click 'Filter' to load data.</div>
+</div>
+
+<!-- View Student Modal -->
+<div id="viewStudentModal" class="edit-modal hidden">
+    <div class="edit-modal-content" style="max-width:850px;">
+        <h2 style="color:var(--primary);margin-top:0;">Student Details</h2>
+        <div id="viewStudentContent"></div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeViewModal()">Close</button>
+            <button class="btn btn-success" onclick="downloadCurrentViewedStudent()">Download PDF</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div id="editModal" class="edit-modal hidden">
+    <div class="edit-modal-content">
+        <h2 style="color:var(--primary);">Edit Student Payment</h2>
+        <div id="editFormContent"></div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+            <button class="btn btn-success" onclick="saveStudentEdit()">Save Changes</button>
+        </div>
+    </div>
 </div>
 
 <!-- Edit Student Modal -->
@@ -413,697 +462,518 @@
 </div>
 
 <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec';
-    const ADMIN_PASSWORD = 'TSTA2024'; 
-    const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/E43TEvdrbua4jStVH8uBse';
-    let currentPreviewData = null;
-    let currentPassportBase64 = '';
-    let currentStudentData = null;
-    let allStudentsData = [];
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxxjLM2owvsLb2mlfliZ5ciGH6bN1BfE-SQ6jliT1ZAB27f1sYDj9mfdN6cVxA1CCSK6g/exec';
+const ADMIN_PASSWORD = 'TSTA2024';
+const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/E43TEvdrbua4jStVH8uBse';
 
-    function showView(viewName) {
-        document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
-        document.getElementById(`view-${viewName}`).classList.remove('hidden');
-        window.scrollTo(0, 0);
+let currentPreviewData = null;
+let currentPassportBase64 = '';
+let currentStudentData = null;
+let allStudentsData = [];
+let currentViewStudent = null;
+let isAdminLoggedIn = false;
+
+function showView(viewName) {
+    document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
+    const target = document.getElementById(`view-${viewName}`);
+    if (target) target.classList.remove('hidden');
+    window.scrollTo(0, 0);
+}
+
+function toggleFormMode() {
+    const channel = document.getElementById('channel').value;
+    const isTIS = channel === 'Tech in Schools';
+    document.getElementById('generalFields').classList.toggle('hidden', isTIS);
+    document.getElementById('tisFields').classList.toggle('hidden', !isTIS);
+    document.getElementById('generalGuardian').classList.toggle('hidden', isTIS);
+    document.getElementById('batchGroup').classList.toggle('hidden', isTIS);
+    document.getElementById('sourceGroup').classList.toggle('hidden', isTIS);
+    document.getElementById('agreedPayGroup').classList.toggle('hidden', isTIS);
+    document.getElementById('paymentMethodGroup').classList.toggle('hidden', isTIS);
+
+    document.getElementById('generalFields').querySelectorAll('input,select,textarea').forEach(el => el.required = !isTIS);
+    document.getElementById('generalGuardian').querySelectorAll('input,select,textarea').forEach(el => el.required = !isTIS);
+    document.getElementById('tisFields').querySelectorAll('input,select,textarea').forEach(el => el.required = isTIS);
+    document.getElementById('batch').required = !isTIS;
+    document.getElementById('source').required = !isTIS;
+    document.getElementById('agreedPayment').required = !isTIS;
+    document.getElementById('paymentMethod').required = !isTIS;
+
+    const payOption = document.getElementById('payOption');
+    const payLabel = document.getElementById('payOptionLabel');
+    if (isTIS) {
+        payLabel.innerText = 'Payment Frequency';
+        payOption.innerHTML = `<option>Daily</option><option>Weekly</option><option>Monthly</option><option>Termly</option><option>Per Academic Session</option><option>Yearly</option>`;
+    } else {
+        payLabel.innerText = 'Payment Option';
+        payOption.innerHTML = `<option>One-Time</option><option>Installment (Max 2)</option>`;
+    }
+}
+
+function calculateAge(dobString) {
+    if (!dobString) return 0;
+    const dob = new Date(dobString), today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    return age;
+}
+
+document.getElementById('dob').addEventListener('change', function() {
+    const age = calculateAge(this.value);
+    const group = document.getElementById('guardianEmailGroup');
+    const input = document.getElementById('guardianEmail');
+    group.classList.toggle('hidden', age >= 16);
+    input.required = age < 16;
+});
+
+async function showPreview() {
+    if (!document.getElementById('regForm').checkValidity()) {
+        document.getElementById('regForm').reportValidity(); return;
+    }
+    const fileInput = document.getElementById('passport');
+    currentPassportBase64 = '';
+    if (fileInput.files.length) {
+        const file = fileInput.files[0];
+        currentPassportBase64 = await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+        });
     }
 
-    function toggleFormMode() {
-        const channel = document.getElementById('channel').value;
-        const isTIS = channel === 'Tech in Schools';
-        
-        document.getElementById('generalFields').classList.toggle('hidden', isTIS);
-        document.getElementById('tisFields').classList.toggle('hidden', !isTIS);
-        document.getElementById('generalGuardian').classList.toggle('hidden', isTIS);
-        document.getElementById('batchGroup').classList.toggle('hidden', isTIS);
-        document.getElementById('sourceGroup').classList.toggle('hidden', isTIS);
-        document.getElementById('agreedPayGroup').classList.toggle('hidden', isTIS);
-        document.getElementById('paymentMethodGroup').classList.toggle('hidden', isTIS);
-        
-        document.getElementById('generalFields').querySelectorAll('input, select, textarea').forEach(el => el.required = !isTIS);
-        document.getElementById('generalGuardian').querySelectorAll('input, select, textarea').forEach(el => el.required = !isTIS);
-        document.getElementById('tisFields').querySelectorAll('input, select, textarea').forEach(el => el.required = isTIS);
-        
-        document.getElementById('batch').required = !isTIS;
-        document.getElementById('source').required = !isTIS;
-        document.getElementById('agreedPayment').required = !isTIS;
-        document.getElementById('paymentMethod').required = !isTIS;
+    const isTIS = document.getElementById('channel').value === 'Tech in Schools';
+    const age = isTIS ? 15 : calculateAge(document.getElementById('dob').value);
+    const isMinor = age < 16;
+    const agreedPayment = parseFloat(document.getElementById('agreedPayment').value) || 0;
+    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    const balance = Math.max(0, agreedPayment - amountPaid);
 
-        const payOption = document.getElementById('payOption');
-        const payLabel = document.getElementById('payOptionLabel');
-        
-        if (isTIS) {
-            payLabel.innerText = 'Payment Frequency';
-            payOption.innerHTML = `<option>Daily</option><option>Weekly</option><option>Monthly</option><option>Termly</option><option>Per Academic Session</option><option>Yearly</option>`;
-        } else {
-            payLabel.innerText = 'Payment Option';
-            payOption.innerHTML = `<option>One-Time</option><option>Installment (Max 2)</option>`;
-        }
-    }
+    currentPreviewData = {
+        isTIS, isMinor, age, balance,
+        channel: document.getElementById('channel').value,
+        branch: document.getElementById('branch').value,
+        course: document.getElementById('course').value,
+        duration: document.getElementById('duration').value,
+        amountPaid, agreedPayment,
+        payOption: document.getElementById('payOption').value,
+        paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value
+    };
 
-    document.getElementById('dob').addEventListener('change', function() {
-        const age = calculateAge(this.value);
-        const group = document.getElementById('guardianEmailGroup');
-        const input = document.getElementById('guardianEmail');
-        if (age < 16) { group.classList.remove('hidden'); input.required = true; } 
-        else { group.classList.add('hidden'); input.required = false; }
-    });
+    generateStudentDataPage(isTIS, balance, agreedPayment, amountPaid);
+    generateAdmissionLetterPage(isTIS, balance, agreedPayment, amountPaid);
+    generatePolicyPage();
+    showView('preview');
+}
 
-    function calculateAge(dobString) {
-        const dob = new Date(dobString); const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const m = today.getMonth() - dob.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-        return age;
-    }
+function getFormStudentName(isTIS) {
+    return isTIS ? document.getElementById('studentFullName').value :
+        `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value} ${document.getElementById('middleName').value}`.replace(/\s+/g,' ').trim();
+}
 
-    async function showPreview() {
-        if (!document.getElementById('regForm').checkValidity()) { 
-            document.getElementById('regForm').reportValidity(); 
-            return; 
-        }
-        
-        const fileInput = document.getElementById('passport');
-        currentPassportBase64 = '';
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            currentPassportBase64 = await new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(file);
-            });
-        }
-        
-        const isTIS = document.getElementById('channel').value === 'Tech in Schools';
-        const age = isTIS ? 15 : calculateAge(document.getElementById('dob').value);
-        const isMinor = age < 16;
-        const agreedPayment = parseFloat(document.getElementById('agreedPayment').value) || 0;
-        const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
-        const balance = agreedPayment - amountPaid;
-        
-        currentPreviewData = {
-            isTIS, isMinor, age, balance,
-            channel: document.getElementById('channel').value,
-            branch: document.getElementById('branch').value,
-            course: document.getElementById('course').value,
-            duration: document.getElementById('duration').value,
-            amountPaid: amountPaid,
-            agreedPayment: agreedPayment,
-            payOption: document.getElementById('payOption').value,
-            paymentMethod: isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
-        };
-        
-        generateStudentDataPage(isTIS, isMinor, balance, agreedPayment, amountPaid);
-        generateAdmissionLetterPage(isTIS, isMinor, balance, agreedPayment, amountPaid);
-        generatePolicyPage();
-        
-        showView('preview');
-    }
-    
-    function generateStudentDataPage(isTIS, isMinor, balance, agreedPayment, amountPaid) {
-        const fullName = isTIS ? 
-            document.getElementById('studentFullName').value :
-            `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
-        
-        const passportImg = currentPassportBase64 ? 
-            `<img src="${currentPassportBase64}" class="passport-img" alt="Passport">` : '';
-        
-        const balanceText = balance > 0 ? 
-            `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #ff0000;"><strong>Balance:</strong></td><td style="color: #ff0000;">₦${balance.toLocaleString()} (Due within 4 weeks)</td></tr>` : 
-            `<tr><td style="padding: 8px; border-bottom: 1px solid #ddd; color: #00aa00;"><strong>Balance:</strong></td><td style="color: #00aa00;">₦0 (Fully Paid)</td></tr>`;
-        
-        let html = `
-            ${passportImg}
-            <h2 style="color: #004d99; margin-top: 0;">STUDENT INFORMATION</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Full Name:</strong></td><td>${fullName}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Course:</strong></td><td>${document.getElementById('course').value}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Branch:</strong></td><td>${document.getElementById('branch').value}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Duration:</strong></td><td>${document.getElementById('duration').value}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Total Fee:</strong></td><td>₦${agreedPayment.toLocaleString()}</td></tr>
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Amount Paid:</strong></td><td>₦${amountPaid.toLocaleString()}</td></tr>
-                ${balanceText}
-                <tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Registration Date:</strong></td><td>${new Date().toLocaleDateString()}</td></tr>
-            </table>
-        `;
-        
-        document.getElementById('studentDataContent').innerHTML = html;
-        document.getElementById('genDate1').textContent = new Date().toLocaleString();
-    }
-    
-    function generateAdmissionLetterPage(isTIS, isMinor, balance, agreedPayment, amountPaid) {
-        const fullName = isTIS ? 
-            document.getElementById('studentFullName').value :
-            `${document.getElementById('title').value} ${document.getElementById('surname').value} ${document.getElementById('firstName').value}`;
-        
-        const recipientName = isMinor ? `Parent/Guardian of ${fullName}` : fullName;
-        const balanceText = balance > 0 ? `<p style="color: #ff0000;"><strong>Important:</strong> Outstanding balance of <strong>₦${balance.toLocaleString()}</strong> must be paid within 4 weeks from registration date.</p>` : '';
-        
-        const html = `
-            <p style="font-size: 16px; margin-bottom: 30px;">
-                <strong>Dear ${recipientName},</strong>
-            </p>
-            <p style="line-height: 1.6;">
-                We are pleased to inform you that you have been successfully admitted into 
-                <strong>${document.getElementById('course').value}</strong> at Tomstudio Tech Academy!
-            </p>
-            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="color: #004d99; margin-top: 0;">Registration Details:</h3>
-                <p><strong>Student Name:</strong> ${fullName}</p>
-                <p><strong>Course:</strong> ${document.getElementById('course').value}</p>
-                <p><strong>Branch:</strong> ${document.getElementById('branch').value}</p>
-                <p><strong>Duration:</strong> ${document.getElementById('duration').value}</p>
-                <p><strong>Total Fee:</strong> ₦${agreedPayment.toLocaleString()}</p>
-                <p><strong>Amount Paid:</strong> ₦${amountPaid.toLocaleString()}</p>
-                ${balance > 0 ? `<p style="color: #ff0000;"><strong>Balance:</strong> ${balance.toLocaleString()} (Due within 4 weeks)</p>` : ''}
-            </div>
+function generateStudentDataPage(isTIS, balance, agreedPayment, amountPaid) {
+    const fullName = getFormStudentName(isTIS);
+    const passportImg = currentPassportBase64 ? `<img src="${currentPassportBase64}" class="passport-img" alt="Passport">` : '';
+    const balanceText = balance > 0
+        ? `<tr><td><strong>Balance:</strong></td><td style="color:#b91c1c;">₦${balance.toLocaleString()}</td></tr>`
+        : `<tr><td><strong>Balance:</strong></td><td style="color:#15803d;">₦0 (Fully Paid)</td></tr>`;
+    document.getElementById('studentDataContent').innerHTML = `
+        ${passportImg}<h2 style="color:#004d99;">STUDENT INFORMATION</h2>
+        <table style="width:100%;border-collapse:collapse;">
+            <tr><td><strong>Full Name:</strong></td><td>${escapeHtml(fullName)}</td></tr>
+            <tr><td><strong>Course:</strong></td><td>${escapeHtml(document.getElementById('course').value)}</td></tr>
+            <tr><td><strong>Branch:</strong></td><td>${escapeHtml(document.getElementById('branch').value)}</td></tr>
+            <tr><td><strong>Duration:</strong></td><td>${escapeHtml(document.getElementById('duration').value)}</td></tr>
+            <tr><td><strong>Total Fee:</strong></td><td>₦${agreedPayment.toLocaleString()}</td></tr>
+            <tr><td><strong>Amount Paid:</strong></td><td>₦${amountPaid.toLocaleString()}</td></tr>
             ${balanceText}
-            <p style="line-height: 1.6;">
-                We look forward to having you in class. Please arrive 15 minutes early for your first session.
-            </p>
-            <p style="margin-top: 40px;">
-                Best Regards,<br>
-                <strong>Registrar, TSTA</strong><br>
-                Tomstudio Tech Academy
-            </p>
-        `;
-        
-        document.getElementById('admissionLetterContent').innerHTML = html;
+            <tr><td><strong>Registration Date:</strong></td><td>${new Date().toLocaleDateString()}</td></tr>
+        </table>`;
+    document.getElementById('genDate1').textContent = new Date().toLocaleString();
+}
+
+function generateAdmissionLetterPage(isTIS, balance, agreedPayment, amountPaid) {
+    const fullName = getFormStudentName(isTIS);
+    const age = currentPreviewData.age;
+    const recipientName = age < 16 ? `Parent/Guardian of ${fullName}` : fullName;
+    document.getElementById('admissionLetterContent').innerHTML = `
+        <p><strong>Dear ${escapeHtml(recipientName)},</strong></p>
+        <p style="line-height:1.6;">We are pleased to inform you that you have been successfully admitted into <strong>${escapeHtml(document.getElementById('course').value)}</strong> at Tomstudio Tech Academy.</p>
+        <div style="background:#f9f9f9;padding:20px;border-radius:8px;margin:20px 0;">
+            <h3 style="color:#004d99;margin-top:0;">Registration Details</h3>
+            <p><strong>Student Name:</strong> ${escapeHtml(fullName)}</p>
+            <p><strong>Course:</strong> ${escapeHtml(document.getElementById('course').value)}</p>
+            <p><strong>Branch:</strong> ${escapeHtml(document.getElementById('branch').value)}</p>
+            <p><strong>Duration:</strong> ${escapeHtml(document.getElementById('duration').value)}</p>
+            <p><strong>Total Fee:</strong> ₦${agreedPayment.toLocaleString()}</p>
+            <p><strong>Amount Paid:</strong> ₦${amountPaid.toLocaleString()}</p>
+            ${balance > 0 ? `<p style="color:#b91c1c;"><strong>Balance:</strong> ₦${balance.toLocaleString()} (Due within 4 weeks)</p>` : ''}
+        </div>
+        <p style="line-height:1.6;">We look forward to having you in class. Please arrive 15 minutes early for your first session.</p>
+        <p style="margin-top:40px;">Best Regards,<br><strong>Registrar, TSTA</strong><br>Tomstudio Tech Academy</p>`;
+}
+
+function generatePolicyPage() {
+    document.getElementById('policyContent').innerHTML = `
+        <div style="line-height:1.8;">
+            <h3 style="color:#004d99;">1. USE OF COMPUTERS</h3><p>Computers are strictly for learning purposes only. No gaming, downloading unauthorized software, or visiting inappropriate websites is allowed.</p>
+            <h3 style="color:#004d99;">2. CERTIFICATES</h3><p>Certificates will be awarded only upon 100% completion of the course and successful submission of the final project.</p>
+            <h3 style="color:#004d99;">3. PAYMENT PLAN</h3><p>Installment plans are limited to a maximum of two (2) installments. The balance must be cleared within 4 weeks from registration date. Balance must be cleared before certificate issuance.</p>
+            <h3 style="color:#004d99;">4. ASSIGNMENTS & PROJECTS</h3><p>All class assignments and projects MUST be submitted via the official TSTA Telegram Channel.</p>
+            <h3 style="color:#004d99;">5. SUPPORT</h3><p>For technical or class support, reach out via the official TSTA WhatsApp line.</p>
+            <h3 style="color:#004d99;">6. ATTENDANCE</h3><p>Regular attendance is mandatory. Students must maintain at least 75% attendance to be eligible for certification.</p>
+        </div>`;
+}
+
+async function downloadPDF() {
+    try {
+        if (!window.jspdf?.jsPDF) throw new Error('PDF library not loaded.');
+        const { jsPDF } = window.jspdf; const pdf = new jsPDF('p','mm','a4');
+        const pages = [...document.querySelectorAll('.pdf-page')];
+        const margin = 8, pageW = 210, pageH = 297, usableW = pageW - margin*2, usableH = pageH - margin*2;
+        for (let i=0;i<pages.length;i++) {
+            if (i) pdf.addPage();
+            const canvas = await html2canvas(pages[i], {scale:2, useCORS:true, allowTaint:false, backgroundColor:'#fff', logging:false});
+            const scale = Math.min(usableW/canvas.width, usableH/canvas.height);
+            const w = canvas.width*scale, h = canvas.height*scale;
+            pdf.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',(pageW-w)/2,margin,w,h);
+        }
+        const name = sanitizeFilename(currentPreviewData?.isTIS ? document.getElementById('studentFullName').value : `${document.getElementById('surname').value}_${document.getElementById('firstName').value}`);
+        pdf.save(`TSTA_${name || 'Student'}_Documents.pdf`);
+    } catch(error) {
+        console.error('PDF generation error:',error);
+        alert('Unable to generate the PDF. Please ensure the page has finished loading and try again.');
     }
-    
-    function generatePolicyPage() {
-        const html = `
-            <div style="line-height: 1.8;">
-                <h3 style="color: #004d99;">1. USE OF COMPUTERS</h3>
-                <p>Computers are strictly for learning purposes only. No gaming, downloading unauthorized software, or visiting inappropriate websites is allowed.</p>
-                
-                <h3 style="color: #004d99;">2. CERTIFICATES</h3>
-                <p>Certificates will be awarded only upon 100% completion of the course and successful submission of the final project.</p>
-                
-                <h3 style="color: #004d99;">3. PAYMENT PLAN</h3>
-                <p>Installment plans are limited to a maximum of two (2) installments. <strong style="color: #ff0000;">The balance must be cleared within 4 weeks from registration date.</strong> Balance must be cleared before certificate issuance.</p>
-                
-                <h3 style="color: #004d99;">4. ASSIGNMENTS & PROJECTS</h3>
-                <p>All class assignments and projects MUST be submitted via the official TSTA Telegram Channel.</p>
-                
-                <h3 style="color: #004d99;">5. SUPPORT</h3>
-                <p>For technical or class support, reach out via the official TSTA WhatsApp line.</p>
-                
-                <h3 style="color: #004d99;">6. ATTENDANCE</h3>
-                <p>Regular attendance is mandatory. Students must maintain at least 75% attendance to be eligible for certification.</p>
-            </div>
-        `;
-        
-        document.getElementById('policyContent').innerHTML = html;
-    }
-    
-    async function downloadPDF() {
-        try {
-            const { jsPDF } = window.jspdf;
-            if (!jsPDF) {
-                alert('PDF library not loaded. Please refresh the page.');
-                return;
-            }
-            
-            const pdf = new jsPDF();
-            const pages = document.querySelectorAll('.pdf-page');
-            
-            for (let i = 0; i < pages.length; i++) {
-                if (i > 0) pdf.addPage();
-                
-                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true });
-                const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 210;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            }
-            
-            // FIXED: Generate proper filename with student name
-            const studentName = currentPreviewData.isTIS ? 
-                document.getElementById('studentFullName').value.replace(/\s+/g, '_') :
-                `${document.getElementById('surname').value}_${document.getElementById('firstName').value}`;
-            
-            pdf.save(`TSTA_${studentName}_Documents.pdf`);
-        } catch (error) {
-            console.error('PDF generation error:', error);
-            alert('Error generating PDF. Please try again.');
-        }
-    }
+}
 
-    async function submitForm() {
-        if (!currentPreviewData) { alert('Please generate preview first.'); return; }
-        
-        const btn = document.getElementById('submitBtn');
-        const msg = document.getElementById('message');
-        btn.disabled = true; btn.innerText = 'Submitting...'; msg.innerText = '';
-
-        const formData = {
-            channel: currentPreviewData.channel,
-            branch: document.getElementById('branch').value,
-            registrarRole: document.getElementById('registrarRole').value,
-            course: document.getElementById('course').value,
-            duration: document.getElementById('duration').value,
-            amountPaid: document.getElementById('amountPaid').value,
-            payOption: document.getElementById('payOption').value,
-            paymentFrequency: document.getElementById('payOption').value,
-            paymentMethod: currentPreviewData.isTIS ? 'N/A' : document.getElementById('paymentMethod').value,
-            passportName: document.getElementById('passport').files[0]?.name || 'None',
-            passportBase64: currentPassportBase64 ? currentPassportBase64.split(',')[1] : ''
-        };
-
-        if (currentPreviewData.isTIS) {
-            formData.studentFullName = document.getElementById('studentFullName').value;
-            formData.schoolName = document.getElementById('schoolName').value;
-            formData.schoolAddress = document.getElementById('schoolAddress').value;
-            formData.classGrade = document.getElementById('classGrade').value;
-            formData.parentName = document.getElementById('parentName').value;
-            formData.parentPhone = document.getElementById('parentPhone').value;
-            formData.parentEmail = document.getElementById('parentEmail').value;
-            formData.email = formData.parentEmail;
-        } else {
-            formData.title = document.getElementById('title').value;
-            formData.surname = document.getElementById('surname').value;
-            formData.firstName = document.getElementById('firstName').value;
-            formData.middleName = document.getElementById('middleName').value;
-            formData.dob = document.getElementById('dob').value;
-            formData.gender = document.getElementById('gender').value;
-            formData.state = document.getElementById('state').value;
-            formData.address = document.getElementById('address').value;
-            formData.phone = document.getElementById('phone').value;
-            formData.email = document.getElementById('email').value;
-            formData.qualification = document.getElementById('qualification').value;
-            formData.occupation = document.getElementById('occupation').value;
-            formData.batch = document.getElementById('batch').value;
-            formData.source = document.getElementById('source').value;
-            formData.agreedPayment = document.getElementById('agreedPayment').value;
-            formData.guardianName = document.getElementById('guardianName').value;
-            formData.guardianRel = document.getElementById('guardianRel').value;
-            formData.guardianPhone = document.getElementById('guardianPhone').value;
-            formData.guardianEmail = document.getElementById('guardianEmail').value;
-        }
-
-        try {
-            const response = await fetch(SCRIPT_URL, { 
-                method: 'POST',
-                body: JSON.stringify(formData)
-            });
-            
-            const result = await response.json();
-            
-            if (result.status === 'success') {
-                // FIXED: Store complete student data for WhatsApp sharing
-                currentStudentData = {
-                    channel: formData.channel,
-                    branch: formData.branch,
-                    course: formData.course,
-                    amountPaid: formData.amountPaid,
-                    studentName: formData.isTIS ? formData.studentFullName : `${formData.title} ${formData.surname} ${formData.firstName}`,
-                    phone: formData.isTIS ? formData.parentPhone : formData.guardianPhone
-                };
-                
-                document.getElementById('postSubmitActions').classList.remove('hidden');
-                
-                if (currentPreviewData.isTIS) {
-                    msg.innerHTML = `Registration Successful!`;
-                } else {
-                    msg.innerText = 'Registration Successful! Documents sent via email.';
-                }
-                msg.className = 'success';
-                document.getElementById('regForm').reset();
-                toggleFormMode();
-            } else {
-                throw new Error(result.message || 'Submission failed');
-            }
-        } catch (error) {
-            console.error('Submission error:', error);
-            msg.innerText = 'Error: ' + error.message; msg.className = 'error';
-        } finally { 
-            btn.disabled = false; btn.innerText = 'Confirm & Submit'; 
-        }
-    }
-    
-    // FIXED: WhatsApp share function with proper data
-    function shareToWhatsApp() {
-        if (!currentStudentData) {
-            alert('No student data available for sharing');
-            return;
-        }
-        
-        const phone = currentStudentData.phone.replace(/\D/g, '');
-        const formattedPhone = phone.startsWith('0') ? '234' + phone.substring(1) : 
-                               phone.startsWith('234') || phone.startsWith('+') ? phone : '234' + phone;
-        
-        const message = `*TSTA ADMISSION CONFIRMATION*\n\nDear Parent/Guardian of *${currentStudentData.studentName}*,\n\nYour ward has been successfully admitted into *${currentStudentData.course}* at Tomstudio Tech Academy.\n\nBranch: ${currentStudentData.branch}\nAmount Paid: ₦${parseFloat(currentStudentData.amountPaid).toLocaleString()}\n\nPlease find attached the admission documents.\n\nThank you!`;
-        
-        const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-    }
-
-    function adminLogin() {
-        if (document.getElementById('adminPass').value === ADMIN_PASSWORD) {
-            showView('admin-dashboard');
-            loadStats();
-        } else {
-            document.getElementById('loginMsg').innerText = 'Incorrect password!';
-        }
-    }
-        async function loadStats() {
-        try {
-            const response = await fetch(`${SCRIPT_URL}?action=getStats`);
-            const text = await response.text();
-            let stats;
-            try { stats = JSON.parse(text); } catch(e) { throw new Error('Invalid JSON'); }
-
-            // Smart check: handle both raw numbers and wrapped objects
-            let total = 0, gen = 0, tis = 0, tic = 0;
-            
-            if (stats.total !== undefined) {
-                total = stats.total; gen = stats.TISA_General; tis = stats.TechInSchools; tic = stats.TechInChurches;
-            } else if (Array.isArray(stats)) {
-                // Fallback if script returns raw array of counts
-                total = stats[0] || 0; gen = stats[1] || 0; tis = stats[2] || 0; tic = stats[3] || 0;
-            }
-
-            document.getElementById('totalCount').textContent = total;
-            document.getElementById('generalCount').textContent = gen;
-            document.getElementById('tisCount').textContent = tis;
-            document.getElementById('ticCount').textContent = tic;
-        } catch (error) {
-            console.error('Error loading stats:', error);
-        }
-    }
-
-    async function loadStudents() {
-        document.getElementById('tableContainer').innerHTML = '<p>Loading data...</p>';
-        const tab = document.getElementById('filterTab').value;
-        const fromDate = document.getElementById('filterFromDate').value;
-        const toDate = document.getElementById('filterToDate').value;
-        
-        try {
-            const response = await fetch(`${SCRIPT_URL}?action=getStudents&tab=${tab}`);
-            const text = await response.text();
-            let result;
-            try { result = JSON.parse(text); } catch(e) { throw new Error('Invalid JSON'); }
-
-            // SMART FIX: Accept raw arrays OR wrapped objects
-            let studentsList = [];
-            if (Array.isArray(result)) {
-                studentsList = result; 
-            } else if (result.status === 'success' && result.data) {
-                studentsList = result.data; 
-            } else if (result.data && Array.isArray(result.data)) {
-                studentsList = result.data;
-            }
-
-            if (studentsList.length > 0) {
-                allStudentsData = studentsList; // This will now be greater than 0!
-                let filteredData = studentsList;
-                
-                if (fromDate || toDate) {
-                    filteredData = studentsList.filter(s => {
-                        const regDate = new Date(s.Timestamp);
-                        const from = fromDate ? new Date(fromDate) : new Date('1900-01-01');
-                        const to = toDate ? new Date(toDate) : new Date('2100-12-31');
-                        return regDate >= from && regDate <= to;
-                    });
-                }
-                renderTable(filteredData, tab);
-            } else {
-                document.getElementById('tableContainer').innerHTML = '<p>No students found.</p>';
-            }
-        } catch (error) {
-            console.error('Load error:', error);
-            document.getElementById('tableContainer').innerHTML = '<p>Error loading data. Check console.</p>';
-        }
-    }
-    
-    function applyQuickDateFilter() {
-        const filter = document.getElementById('quickDateFilter').value;
-        const today = new Date();
-        let fromDate, toDate = today;
-        
-        switch(filter) {
-            case 'today':
-                fromDate = today;
-                toDate = today;
-                break;
-            case 'week':
-                const dayOfWeek = today.getDay();
-                fromDate = new Date(today);
-                fromDate.setDate(today.getDate() - dayOfWeek);
-                break;
-            case 'month':
-                fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                break;
-            case 'year':
-                fromDate = new Date(today.getFullYear(), 0, 1);
-                break;
-            default:
-                fromDate = null;
-                toDate = null;
-        }
-        
-        if (fromDate) {
-            document.getElementById('filterFromDate').value = fromDate.toISOString().split('T')[0];
-            document.getElementById('filterToDate').value = toDate.toISOString().split('T')[0];
-        } else {
-            document.getElementById('filterFromDate').value = '';
-            document.getElementById('filterToDate').value = '';
-        }
-        
-        loadStudents();
-    }
-    
-    async function searchStudents() {
-        const query = document.getElementById('filterName').value.toLowerCase();
-        const suggestionsDiv = document.getElementById('searchSuggestions');
-        
-        if (query.length < 2) {
-            suggestionsDiv.classList.add('hidden');
-            return;
-        }
-        
-        if (allStudentsData.length === 0) {
-            await loadStudents();
-        }
-        
-        const tab = document.getElementById('filterTab').value;
-        const matches = allStudentsData.filter(s => {
-            const name = tab === 'TechInSchools' ? 
-                (s['Student Full Name'] || '').toLowerCase() : 
-                `${s.Surname || ''} ${s.FirstName || ''} ${s.MiddleName || ''}`.toLowerCase();
-            const phone = (s.Phone || s['Parent Phone'] || '').toString();
-            const email = (s.Email || s['Parent Email'] || '').toLowerCase();
-            
-            return name.includes(query) || phone.includes(query) || email.includes(query);
-        }).slice(0, 10);
-        
-        if (matches.length > 0) {
-            suggestionsDiv.innerHTML = matches.map(s => {
-                const name = tab === 'TechInSchools' ? s['Student Full Name'] : `${s.Title} ${s.Surname} ${s.FirstName}`;
-                const phone = s.Phone || s['Parent Phone'] || 'N/A';
-                return `<div onclick="selectStudent('${name}', '${phone}')">${name} - ${phone}</div>`;
-            }).join('');
-            suggestionsDiv.classList.remove('hidden');
-        } else {
-            suggestionsDiv.classList.add('hidden');
-        }
-    }
-    
-    function selectStudent(name, phone) {
-        document.getElementById('filterName').value = name;
-        document.getElementById('searchSuggestions').classList.add('hidden');
-        loadStudents();
-    }
-
-    function renderTable(data, tab) {
-        const fName = document.getElementById('filterName').value.toLowerCase();
-        const fBranch = document.getElementById('filterBranch').value;
-
-        const filtered = data.filter(s => {
-            const name = tab === 'TechInSchools' ? (s['Student Full Name'] || '') : `${s.Surname || ''} ${s.FirstName || ''}`;
-            const nameMatch = name.toLowerCase().includes(fName);
-            const branchMatch = !fBranch || (s.Branch && s.Branch.includes(fBranch));
-            return nameMatch && branchMatch;
+async function submitForm() {
+    if (!currentPreviewData) { alert('Please generate preview first.'); return; }
+    const btn=document.getElementById('submitBtn'), msg=document.getElementById('message');
+    btn.disabled=true; btn.innerText='Submitting...'; msg.innerText='';
+    const formData={
+        channel:currentPreviewData.channel, branch:document.getElementById('branch').value,
+        registrarRole:document.getElementById('registrarRole').value, course:document.getElementById('course').value,
+        duration:document.getElementById('duration').value, amountPaid:document.getElementById('amountPaid').value,
+        payOption:document.getElementById('payOption').value, paymentFrequency:document.getElementById('payOption').value,
+        paymentMethod:currentPreviewData.isTIS?'N/A':document.getElementById('paymentMethod').value,
+        passportName:document.getElementById('passport').files[0]?.name||'None',
+        passportBase64:currentPassportBase64?currentPassportBase64.split(',')[1]:''
+    };
+    if(currentPreviewData.isTIS){
+        Object.assign(formData,{
+            studentFullName:document.getElementById('studentFullName').value, schoolName:document.getElementById('schoolName').value,
+            schoolAddress:document.getElementById('schoolAddress').value, classGrade:document.getElementById('classGrade').value,
+            parentName:document.getElementById('parentName').value, parentPhone:document.getElementById('parentPhone').value,
+            parentEmail:document.getElementById('parentEmail').value, email:document.getElementById('parentEmail').value
         });
-
-        if (filtered.length === 0) { 
-            document.getElementById('tableContainer').innerHTML = '<p>No students found.</p>'; 
-            return; 
-        }
-
-        let html = `<table><tr><th>Year</th><th>Branch</th><th>Name</th><th>Course</th>`;
-        if (tab === 'TechInSchools') {
-            html += `<th>School</th><th>Class</th><th>Frequency</th><th>Paid (₦)</th><th>Status</th><th>Action</th></tr>`;
-            filtered.forEach(s => {
-                html += `<tr>
-                    <td>${s.Year || 'N/A'}</td>
-                    <td>${s.Branch || 'N/A'}</td>
-                    <td>${s['Student Full Name'] || 'N/A'}</td>
-                    <td>${s.Course || 'N/A'}</td>
-                    <td>${s['School Name'] || 'N/A'}</td>
-                    <td>${s['Class/Grade'] || 'N/A'}</td>
-                    <td>${s['Payment Frequency'] || 'N/A'}</td>
-                    <td>₦${parseFloat(s['Amount Paid'] || 0).toLocaleString()}</td>
-                    <td><span class="${s['Payment Status'] === 'Paid' ? 'status-paid' : 'status-pending'}">${s['Payment Status'] || 'Pending'}</span></td>
-                    <td><button class="btn btn-info" style="padding:5px 10px;font-size:12px;" onclick="editStudent('${tab}', ${s.RowNumber})">Edit</button></td>
-                </tr>`;
-            });
-        } else {
-            html += `<th>Batch</th><th>Total (₦)</th><th>Paid (₦)</th><th>Balance (₦)</th><th>Method</th><th>Status</th><th>Action</th></tr>`;
-            filtered.forEach(s => {
-                const total = parseFloat(s['Agreed Payment']) || 0;
-                const paid = parseFloat(s['Amount Paid']) || 0;
-                const balance = total - paid;
-                html += `<tr>
-                    <td>${s.Year || 'N/A'}</td>
-                    <td>${s.Branch || 'N/A'}</td>
-                    <td>${s.Title || ''} ${s.Surname || ''} ${s.FirstName || ''}</td>
-                    <td>${s['Course Applied For'] || 'N/A'}</td>
-                    <td>${s.Batch || 'N/A'}</td>
-                    <td>₦${total.toLocaleString()}</td>
-                    <td>₦${paid.toLocaleString()}</td>
-                    <td style="color: ${balance > 0 ? 'red' : 'green'}">₦${balance.toLocaleString()}</td>
-                    <td>${s['Payment Method'] || 'N/A'}</td>
-                    <td><span class="${s['Payment Status'] === 'Paid' ? 'status-paid' : 'status-pending'}">${s['Payment Status'] || 'Pending'}</span></td>
-                    <td><button class="btn btn-info" style="padding:5px 10px;font-size:12px;" onclick="editStudent('${tab}', ${s.RowNumber})">Edit</button></td>
-                </tr>`;
-            });
-        }
-        html += `</table>`;
-        document.getElementById('tableContainer').innerHTML = html;
-    }
-    
-    async function editStudent(tab, rowNum) {
-        try {
-            const response = await fetch(`${SCRIPT_URL}?action=getStudentByRow&tab=${tab}&rowNum=${rowNum}`);
-            const result = await response.json();
-            
-            if (result.status === 'success') {
-                const student = result.data;
-                currentStudentData = { tab, rowNum, data: student };
-                
-                const isTIS = tab === 'TechInSchools';
-                let formHtml = '';
-                
-                if (isTIS) {
-                    formHtml = `
-                        <div class="form-group"><label>Student Name</label><input type="text" id="editStudentName" value="${student['Student Full Name'] || ''}" readonly></div>
-                        <div class="form-group"><label>School</label><input type="text" value="${student['School Name'] || ''}" readonly></div>
-                        <div class="form-group"><label>Course</label><input type="text" value="${student.Course || ''}" readonly></div>
-                        <div class="form-group"><label>Amount Paid ()</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
-                    `;
-                } else {
-                    const balance = (parseFloat(student['Agreed Payment']) || 0) - (parseFloat(student['Amount Paid']) || 0);
-                    formHtml = `
-                        <div class="form-group"><label>Full Name</label><input type="text" value="${student.Title} ${student.Surname} ${student.FirstName}" readonly></div>
-                        <div class="form-group"><label>Course</label><input type="text" value="${student['Course Applied For'] || ''}" readonly></div>
-                        <div class="form-group"><label>Total Fee (₦)</label><input type="number" value="${student['Agreed Payment'] || 0}" readonly></div>
-                        <div class="form-group"><label>Amount Paid (₦)</label><input type="number" id="editAmountPaid" value="${student['Amount Paid'] || 0}"></div>
-                        <div class="form-group"><label>Balance (₦)</label><input type="number" value="${balance}" readonly style="color: ${balance > 0 ? 'red' : 'green'}"></div>
-                        <div class="form-group"><label>Payment Status</label><select id="editPaymentStatus"><option value="Pending" ${student['Payment Status'] === 'Pending' ? 'selected' : ''}>Pending</option><option value="Paid" ${student['Payment Status'] === 'Paid' ? 'selected' : ''}>Paid</option></select></div>
-                    `;
-                }
-                
-                document.getElementById('editFormContent').innerHTML = formHtml;
-                document.getElementById('editModal').classList.remove('hidden');
-            }
-        } catch (error) {
-            console.error('Error loading student:', error);
-            alert('Error loading student data');
-        }
-    }
-    
-    function closeEditModal() {
-        document.getElementById('editModal').classList.add('hidden');
-        currentStudentData = null;
-    }
-    
-    async function saveStudentEdit() {
-        if (!currentStudentData) return;
-        
-        const amountPaid = document.getElementById('editAmountPaid').value;
-        let status = 'Pending';
-        
-        if (currentStudentData.tab !== 'TechInSchools') {
-            status = document.getElementById('editPaymentStatus').value;
-        } else {
-            const total = parseFloat(currentStudentData.data['Agreed Payment']) || 0;
-            status = parseFloat(amountPaid) >= total ? 'Paid' : 'Pending';
-        }
-        
-        try {
-            const response = await fetch(`${SCRIPT_URL}?action=updatePayment&tab=${currentStudentData.tab}&rowNum=${currentStudentData.rowNum}&amountPaid=${amountPaid}&status=${status}`);
-            const result = await response.json();
-            
-            if (result.status === 'success') {
-                alert('Student details updated successfully!');
-                closeEditModal();
-                loadStudents();
-                loadStats();
-            } else {
-                throw new Error(result.message);
-            }
-        } catch (error) {
-            console.error('Update error:', error);
-            alert('Error updating student: ' + error.message);
-        }
-    }
-    
-    function exportToCSV() {
-        const tab = document.getElementById('filterTab').value;
-        const table = document.querySelector('table');
-        if (!table) { alert('No data to export'); return; }
-        
-        let csv = [];
-        const rows = table.querySelectorAll('tr');
-        
-        rows.forEach(row => {
-            const cols = row.querySelectorAll('td, th');
-            const rowData = [];
-            cols.forEach(col => rowData.push('"' + col.textContent.trim() + '"'));
-            csv.push(rowData.join(','));
+    } else {
+        Object.assign(formData,{
+            title:document.getElementById('title').value,surname:document.getElementById('surname').value,
+            firstName:document.getElementById('firstName').value,middleName:document.getElementById('middleName').value,
+            dob:document.getElementById('dob').value,gender:document.getElementById('gender').value,state:document.getElementById('state').value,
+            address:document.getElementById('address').value,phone:document.getElementById('phone').value,email:document.getElementById('email').value,
+            qualification:document.getElementById('qualification').value,occupation:document.getElementById('occupation').value,
+            batch:document.getElementById('batch').value,source:document.getElementById('source').value,
+            agreedPayment:document.getElementById('agreedPayment').value,guardianName:document.getElementById('guardianName').value,
+            guardianRel:document.getElementById('guardianRel').value,guardianPhone:document.getElementById('guardianPhone').value,
+            guardianEmail:document.getElementById('guardianEmail').value
         });
-        
-        const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `TSTA_${tab}_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
     }
-    
-    async function exportToPDF() {
-        try {
-            const { jsPDF } = window.jspdf;
-            if (!jsPDF) {
-                alert('PDF library not loaded.');
-                return;
-            }
-            
-            const table = document.querySelector('table');
-            if (!table) { alert('No data to export'); return; }
-            
-            const pdf = new jsPDF('landscape');
-            pdf.autoTable({ html: 'table' });
-            
-            const tab = document.getElementById('filterTab').value;
-            pdf.save(`TSTA_${tab}_Export_${new Date().toISOString().split('T')[0]}.pdf`);
-        } catch (error) {
-            console.error('PDF export error:', error);
-            alert('Error exporting PDF');
-        }
-    }
+    try{
+        const response=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(formData)});
+        const result=await response.json();
+        if(result.status!=='success') throw new Error(result.message||'Submission failed');
+        currentStudentData={...formData,studentName:currentPreviewData.isTIS?formData.studentFullName:`${formData.title} ${formData.surname} ${formData.firstName}`,phone:currentPreviewData.isTIS?formData.parentPhone:formData.guardianPhone};
+        document.getElementById('postSubmitActions').classList.remove('hidden');
+        msg.innerText='Registration Successful! Documents sent via email.'; msg.className='success';
+        document.getElementById('regForm').reset(); toggleFormMode();
+    }catch(error){console.error(error);msg.innerText='Error: '+error.message;msg.className='error';}
+    finally{btn.disabled=false;btn.innerText='Confirm & Submit';}
+}
 
-    // Initialize on load
-    toggleFormMode();
-    
-    // Close search suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#filterName')) {
-            document.getElementById('searchSuggestions').classList.add('hidden');
-        }
+function shareToWhatsApp(){
+    if(!currentStudentData?.phone){alert('No student contact available.');return;}
+    const phone=currentStudentData.phone.replace(/\D/g,'');
+    const formatted=phone.startsWith('0')?'234'+phone.slice(1):phone.startsWith('234')?phone:'234'+phone;
+    const message=`*TSTA ADMISSION CONFIRMATION*\n\nDear Parent/Guardian of *${currentStudentData.studentName}*,\n\nYour ward has been successfully admitted into *${currentStudentData.course}* at Tomstudio Tech Academy.\n\nBranch: ${currentStudentData.branch}\nAmount Paid: ₦${parseFloat(currentStudentData.amountPaid||0).toLocaleString()}\n\nPlease find the admission documents attached.\n\nThank you!`;
+    window.open(`https://wa.me/${formatted}?text=${encodeURIComponent(message)}`,'_blank');
+}
+
+function adminLogin(){
+    if(document.getElementById('adminPass').value===ADMIN_PASSWORD){
+        isAdminLoggedIn=true; document.getElementById('loginMsg').innerText='';
+        showView('admin-dashboard'); loadStats(); loadStudents();
+    }else document.getElementById('loginMsg').innerText='Incorrect password!';
+}
+function adminLogout(){isAdminLoggedIn=false;allStudentsData=[];document.getElementById('adminPass').value='';showView('form');}
+
+async function apiGet(params){
+    const url=new URL(SCRIPT_URL);
+    Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+    const response=await fetch(url.toString(),{cache:'no-store'});
+    const text=await response.text();
+    let result; try{result=JSON.parse(text);}catch(e){throw new Error('Server returned invalid JSON.');}
+    if(result.status==='error') throw new Error(result.message||'Server error');
+    return result;
+}
+
+async function loadStats(){
+    const ids=['totalCount','generalCount','tisCount','ticCount'];
+    ids.forEach(id=>document.getElementById(id).textContent='…');
+    try{
+        const stats=await apiGet({action:'getStats'});
+        document.getElementById('totalCount').textContent=Number(stats.total||0);
+        document.getElementById('generalCount').textContent=Number(stats.TISA_General||0);
+        document.getElementById('tisCount').textContent=Number(stats.TechInSchools||0);
+        document.getElementById('ticCount').textContent=Number(stats.TechInChurches||0);
+    }catch(e){console.error(e);ids.forEach(id=>document.getElementById(id).textContent='0');}
+}
+
+function handleTabChange(){
+    document.getElementById('filterName').value='';
+    document.getElementById('searchSuggestions').classList.add('hidden');
+    allStudentsData=[];
+    loadStudents();
+}
+
+async function loadStudents(){
+    const box=document.getElementById('tableContainer');
+    box.innerHTML='<div class="empty-state">Loading student records...</div>';
+    const tab=document.getElementById('filterTab').value;
+    try{
+        const result=await apiGet({action:'getStudents',tab});
+        allStudentsData=Array.isArray(result.data)?result.data:[];
+        renderCurrentStudents();
+    }catch(e){
+        console.error(e); box.innerHTML=`<div class="empty-state">Error loading data: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function getStudentDate(s){
+    const raw=s.Timestamp ?? s['Registration Date'] ?? s['Date'] ?? s['RegistrationDate'] ?? '';
+    const d=new Date(raw);
+    return isNaN(d.getTime())?null:d;
+}
+function normalize(v){return String(v??'').trim().toLowerCase();}
+function getStudentName(s,tab){
+    if(tab==='TechInSchools') return String(s['Student Full Name']||'').trim();
+    return `${s.Title||''} ${s.Surname||''} ${s.FirstName||''} ${s.MiddleName||''}`.replace(/\s+/g,' ').trim();
+}
+function matchesSearch(s,tab,q){
+    if(!q)return true;
+    const name=normalize(getStudentName(s,tab));
+    const phone=normalize(tab==='TechInSchools'?(s['Parent Phone']||''):(s.Phone||''));
+    const email=normalize(tab==='TechInSchools'?(s['Parent Email']||''):(s.Email||''));
+    return name.includes(q)||phone.includes(q)||email.includes(q);
+}
+
+function getDateRange(){
+    const fromVal=document.getElementById('filterFromDate').value, toVal=document.getElementById('filterToDate').value;
+    let from=fromVal?new Date(fromVal+'T00:00:00'):null;
+    let to=toVal?new Date(toVal+'T23:59:59.999'):null;
+    return {from,to};
+}
+
+function renderCurrentStudents(){
+    const tab=document.getElementById('filterTab').value, q=normalize(document.getElementById('filterName').value);
+    const branch=document.getElementById('filterBranch').value, {from,to}=getDateRange();
+    const filtered=allStudentsData.filter(s=>{
+        const d=getStudentDate(s);
+        const dateOK=(!from||!d||d>=from)&&(!to||!d||d<=to);
+        const branchOK=!branch||String(s.Branch||'')===branch;
+        return dateOK&&branchOK&&matchesSearch(s,tab,q);
     });
+    renderTable(filtered,tab);
+}
+
+function renderTable(filtered,tab){
+    if(!filtered.length){document.getElementById('tableContainer').innerHTML='<div class="empty-state">No students found for the current filters.</div>';return;}
+    let html='<div style="margin-bottom:10px;color:#6b7280;font-size:13px;">Showing '+filtered.length+' student(s)</div><div class="table-wrap"><table class="admin-table"><thead><tr>';
+    html+='<th>Year</th><th>Branch</th><th>Name</th><th>Course</th>';
+    if(tab==='TechInSchools') html+='<th>School</th><th>Class</th><th>Frequency</th><th>Paid (₦)</th><th>Status</th>';
+    else html+='<th>Batch</th><th>Total (₦)</th><th>Paid (₦)</th><th>Balance (₦)</th><th>Method</th><th>Status</th>';
+    html+='<th>Actions</th></tr></thead><tbody>';
+    filtered.forEach(s=>{
+        const row=Number(s.RowNumber);
+        const safeTab=escapeHtml(tab);
+        const total=parseFloat(s['Agreed Payment'])||0, paid=parseFloat(s['Amount Paid'])||0, balance=Math.max(0,total-paid);
+        const status=s['Payment Status']|| (balance<=0&&total>0?'Paid':'Pending');
+        html+=`<tr>
+            <td>${escapeHtml(s.Year||'N/A')}</td><td>${escapeHtml(s.Branch||'N/A')}</td><td>${escapeHtml(getStudentName(s,tab)||'N/A')}</td>
+            <td>${escapeHtml(s['Course Applied For']||s.Course||'N/A')}</td>`;
+        if(tab==='TechInSchools'){
+            html+=`<td>${escapeHtml(s['School Name']||'N/A')}</td><td>${escapeHtml(s['Class/Grade']||'N/A')}</td>
+            <td>${escapeHtml(s['Payment Frequency']||'N/A')}</td><td>₦${paid.toLocaleString()}</td>
+            <td><span class="${status==='Paid'?'status-paid':'status-pending'}">${escapeHtml(status)}</span></td>`;
+        }else{
+            html+=`<td>${escapeHtml(s.Batch||'N/A')}</td><td>₦${total.toLocaleString()}</td><td>₦${paid.toLocaleString()}</td>
+            <td style="color:${balance>0?'#b91c1c':'#15803d'};">₦${balance.toLocaleString()}</td>
+            <td>${escapeHtml(s['Payment Method']||'N/A')}</td><td><span class="${status==='Paid'?'status-paid':'status-pending'}">${escapeHtml(status)}</span></td>`;
+        }
+        html+=`<td><div class="action-group">
+            <button class="action-btn action-view" onclick="viewStudent('${safeTab}',${row})">View</button>
+            <button class="action-btn action-edit" onclick="editStudent('${safeTab}',${row})">Edit</button>
+            <button class="action-btn action-download" onclick="downloadStudent('${safeTab}',${row})">PDF</button>
+        </div></td></tr>`;
+    });
+    html+='</tbody></table></div>';
+    document.getElementById('tableContainer').innerHTML=html;
+}
+
+function searchStudents(){
+    const query=normalize(document.getElementById('filterName').value), div=document.getElementById('searchSuggestions');
+    if(query.length<2){div.classList.add('hidden');renderCurrentStudents();return;}
+    const tab=document.getElementById('filterTab').value;
+    const matches=allStudentsData.filter(s=>matchesSearch(s,tab,query)).slice(0,10);
+    if(!matches.length){div.classList.add('hidden');renderCurrentStudents();return;}
+    div.innerHTML=matches.map(s=>{
+        const name=getStudentName(s,tab)||'Unnamed', phone=tab==='TechInSchools'?(s['Parent Phone']||''):(s.Phone||'');
+        return `<div onclick="selectStudent(${JSON.stringify(name)})"><strong>${escapeHtml(name)}</strong><br><small>${escapeHtml(phone||'No phone')}</small></div>`;
+    }).join('');
+    div.classList.remove('hidden'); renderCurrentStudents();
+}
+
+function selectStudent(name){document.getElementById('filterName').value=name;document.getElementById('searchSuggestions').classList.add('hidden');renderCurrentStudents();}
+
+function applyQuickDateFilter(){
+    const filter=document.getElementById('quickDateFilter').value,today=new Date();
+    let from=null,to=null;
+    if(filter==='today'){from=new Date(today.getFullYear(),today.getMonth(),today.getDate());to=new Date(from);to.setDate(to.getDate()+1);}
+    if(filter==='week'){const day=today.getDay();from=new Date(today);from.setDate(today.getDate()-day);from.setHours(0,0,0,0);to=new Date(today);to.setHours(23,59,59,999);}
+    if(filter==='month'){from=new Date(today.getFullYear(),today.getMonth(),1);to=new Date(today.getFullYear(),today.getMonth()+1,0,23,59,59,999);}
+    if(filter==='year'){from=new Date(today.getFullYear(),0,1);to=new Date(today.getFullYear(),11,31,23,59,59,999);}
+    document.getElementById('filterFromDate').value=from?formatDateInput(from):'';
+    document.getElementById('filterToDate').value=to?formatDateInput(to):'';
+    renderCurrentStudents();
+}
+
+function formatDateInput(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+async function getStudent(tab,rowNum){
+    return await apiGet({action:'getStudentByRow',tab,rowNum});
+}
+
+async function viewStudent(tab,rowNum){
+    try{
+        const result=await getStudent(tab,rowNum); currentViewStudent={tab,rowNum,data:result.data};
+        const s=result.data, isTIS=tab==='TechInSchools', total=parseFloat(s['Agreed Payment'])||0, paid=parseFloat(s['Amount Paid'])||0, balance=Math.max(0,total-paid);
+        const fields=isTIS?[
+            ['Student Name',s['Student Full Name']],['School',s['School Name']],['School Address',s['School Address']],
+            ['Class / Grade',s['Class/Grade']],['Parent / Guardian',s['Parent Name']],['Parent Phone',s['Parent Phone']],
+            ['Parent Email',s['Parent Email']],['Course',s.Course],['Duration',s.Duration],['Payment Frequency',s['Payment Frequency']],
+            ['Amount Paid',`₦${paid.toLocaleString()}`],['Registration Date',formatDisplayDate(getStudentDate(s))]
+        ]:[
+            ['Full Name',getStudentName(s,tab)],['Date of Birth',formatDisplayDate(s.DOB||s['Date of Birth'])],['Gender',s.Gender],
+            ['State',s.State],['Phone',s.Phone],['Email',s.Email],['Address',s.Address],['Qualification',s.Qualification],
+            ['Occupation',s.Occupation],['Course',s['Course Applied For']],['Duration',s.Duration],['Batch',s.Batch],
+            ['Total Fee',`₦${total.toLocaleString()}`],['Amount Paid',`₦${paid.toLocaleString()}`],['Balance',`₦${balance.toLocaleString()}`],
+            ['Payment Method',s['Payment Method']],['Payment Status',s['Payment Status']],['Registration Date',formatDisplayDate(getStudentDate(s))]
+        ];
+        document.getElementById('viewStudentContent').innerHTML=`<div class="detail-grid">${fields.map(([k,v])=>`<div class="detail-item"><strong>${escapeHtml(k)}</strong>${escapeHtml(v||'N/A')}</div>`).join('')}</div>`;
+        document.getElementById('viewStudentModal').classList.remove('hidden');
+    }catch(e){alert('Error loading student: '+e.message);}
+}
+function closeViewModal(){document.getElementById('viewStudentModal').classList.add('hidden');currentViewStudent=null;}
+async function downloadCurrentViewedStudent(){if(currentViewStudent)await downloadStudent(currentViewStudent.tab,currentViewStudent.rowNum);}
+
+async function editStudent(tab,rowNum){
+    try{
+        const result=await getStudent(tab,rowNum),student=result.data;
+        currentStudentData={tab,rowNum,data:student};
+        const isTIS=tab==='TechInSchools';
+        const total=parseFloat(student['Agreed Payment'])||0,paid=parseFloat(student['Amount Paid'])||0,balance=Math.max(0,total-paid);
+        let formHtml=isTIS?`
+            <div class="form-group"><label>Student Name</label><input type="text" value="${escapeAttr(student['Student Full Name']||'')}" readonly></div>
+            <div class="form-group"><label>School</label><input type="text" value="${escapeAttr(student['School Name']||'')}" readonly></div>
+            <div class="form-group"><label>Course</label><input type="text" value="${escapeAttr(student.Course||'')}" readonly></div>
+            <div class="form-group"><label>Amount Paid (₦)</label><input type="number" id="editAmountPaid" min="0" value="${paid}"></div>`
+        :`
+            <div class="form-group"><label>Full Name</label><input type="text" value="${escapeAttr(getStudentName(student,tab))}" readonly></div>
+            <div class="form-group"><label>Course</label><input type="text" value="${escapeAttr(student['Course Applied For']||'')}" readonly></div>
+            <div class="form-group"><label>Total Fee (₦)</label><input type="number" value="${total}" readonly></div>
+            <div class="form-group"><label>Amount Paid (₦)</label><input type="number" id="editAmountPaid" min="0" value="${paid}"></div>
+            <div class="form-group"><label>Balance (₦)</label><input type="number" id="editBalance" value="${balance}" readonly></div>
+            <div class="form-group"><label>Payment Status</label><select id="editPaymentStatus"><option value="Pending" ${student['Payment Status']==='Pending'?'selected':''}>Pending</option><option value="Paid" ${student['Payment Status']==='Paid'?'selected':''}>Paid</option></select></div>`;
+        document.getElementById('editFormContent').innerHTML=formHtml;
+        document.getElementById('editModal').classList.remove('hidden');
+        const paidInput=document.getElementById('editAmountPaid');
+        if(paidInput && !isTIS) paidInput.addEventListener('input',()=>{document.getElementById('editBalance').value=Math.max(0,total-(parseFloat(paidInput.value)||0));});
+    }catch(e){alert('Error loading student data: '+e.message);}
+}
+function closeEditModal(){document.getElementById('editModal').classList.add('hidden');currentStudentData=null;}
+
+async function saveStudentEdit(){
+    if(!currentStudentData)return;
+    const amountPaid=parseFloat(document.getElementById('editAmountPaid').value)||0;
+    const total=parseFloat(currentStudentData.data['Agreed Payment'])||0;
+    const status=currentStudentData.tab==='TechInSchools'?(amountPaid>0?'Paid':'Pending'):document.getElementById('editPaymentStatus').value;
+    try{
+        const result=await apiGet({action:'updatePayment',tab:currentStudentData.tab,rowNum:currentStudentData.rowNum,amountPaid,status});
+        if(result.status!=='success')throw new Error(result.message||'Update failed');
+        closeEditModal(); await Promise.all([loadStudents(),loadStats()]); alert('Student payment updated successfully.');
+    }catch(e){alert('Error updating student: '+e.message);}
+}
+
+function buildStudentPDF(s,tab){
+    if(!window.jspdf?.jsPDF)throw new Error('PDF library not loaded.');
+    const { jsPDF } = window.jspdf; const pdf=new jsPDF('p','mm','a4'), isTIS=tab==='TechInSchools';
+    const name=getStudentName(s,tab)||'Student', course=s['Course Applied For']||s.Course||'N/A';
+    const total=parseFloat(s['Agreed Payment'])||0,paid=parseFloat(s['Amount Paid'])||0,balance=Math.max(0,total-paid);
+    const pageWidth=210, margin=15, contentWidth=180;
+    const blue=[0,77,153];
+    function header(title){pdf.setFillColor(...blue);pdf.rect(0,0,210,30,'F');pdf.setTextColor(255,255,255);pdf.setFontSize(18);pdf.setFont(undefined,'bold');pdf.text('TOMSTUDIO TECH ACADEMY',105,12,{align:'center'});pdf.setFontSize(11);pdf.text(title,105,22,{align:'center'});pdf.setTextColor(40,40,40);pdf.setFont(undefined,'normal');}
+    function lineField(label,value,y){pdf.setFont(undefined,'bold');pdf.text(String(label)+':',margin,y);pdf.setFont(undefined,'normal');const lines=pdf.splitTextToSize(String(value??'N/A'),contentWidth-45);pdf.text(lines,margin+45,y);return y+Math.max(7,lines.length*5);}
+    header('STUDENT REGISTRATION RECORD');
+    let y=43; y=lineField('Student Name',name,y); y=lineField('Course',course,y); y=lineField('Branch',s.Branch,y);
+    y=lineField('Duration',s.Duration,y); y=lineField('Registration Date',formatDisplayDate(getStudentDate(s)),y);
+    if(isTIS){y=lineField('School',s['School Name'],y);y=lineField('Class / Grade',s['Class/Grade'],y);y=lineField('Parent / Guardian',s['Parent Name'],y);y=lineField('Parent Phone',s['Parent Phone'],y);y=lineField('Payment Frequency',s['Payment Frequency'],y);}
+    else {y=lineField('Date of Birth',formatDisplayDate(s.DOB||s['Date of Birth']),y);y=lineField('Gender',s.Gender,y);y=lineField('Phone',s.Phone,y);y=lineField('Email',s.Email,y);y=lineField('Address',s.Address,y);y=lineField('Qualification',s.Qualification,y);}
+    y+=6;pdf.setDrawColor(220,220,220);pdf.line(margin,y,195,y);y+=10;
+    y=lineField('Total Fee',`₦${total.toLocaleString()}`,y);y=lineField('Amount Paid',`₦${paid.toLocaleString()}`,y);y=lineField('Balance',`₦${balance.toLocaleString()}`,y);y=lineField('Payment Status',s['Payment Status']||(balance<=0&&total>0?'Paid':'Pending'),y);
+    pdf.setFontSize(9);pdf.setTextColor(100);pdf.text('Generated from TSTA Student Records Dashboard',105,287,{align:'center'});
+    pdf.addPage();header('OFFICIAL ADMISSION RECORD');y=48;pdf.setFontSize(12);pdf.setTextColor(40);pdf.setFont(undefined,'normal');
+    const recipient=isTIS?`Parent/Guardian of ${name}`:name;
+    const letter=`Dear ${recipient},\n\nWe are pleased to confirm the registration of ${name} for ${course} at Tomstudio Tech Academy.\n\nBranch: ${s.Branch||'N/A'}\nDuration: ${s.Duration||'N/A'}\nAmount Paid: ₦${paid.toLocaleString()}\nBalance: ₦${balance.toLocaleString()}\n\nPlease retain this document for your records.\n\nBest Regards,\nRegistrar, TSTA\nTomstudio Tech Academy`;
+    const lines=pdf.splitTextToSize(letter,contentWidth);pdf.text(lines,margin,y,{lineHeightFactor:1.5});
+    pdf.setFontSize(9);pdf.setTextColor(100);pdf.text('265, Isawo Road, Oke-Oko Isawo, Agric, Ikorodu, Lagos',105,280,{align:'center'});pdf.text('Tomstudio Tech Academy',105,286,{align:'center'});
+    return pdf;
+}
+
+async function downloadStudent(tab,rowNum){
+    try{const result=await getStudent(tab,rowNum);const pdf=buildStudentPDF(result.data,tab);const filename=sanitizeFilename(getStudentName(result.data,tab)||'Student');pdf.save(`TSTA_${filename}_Record.pdf`);}
+    catch(e){console.error(e);alert('Unable to generate student PDF: '+e.message);}
+}
+
+function exportToCSV(){
+    const table=document.querySelector('.admin-table');if(!table){alert('No data to export');return;}
+    const rows=[...table.querySelectorAll('tr')].map(row=>[...row.querySelectorAll('th,td')].map(cell=>`"${cell.textContent.trim().replace(/"/g,'""')}"`).join(','));
+    const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=`TSTA_${document.getElementById('filterTab').value}_${formatDateInput(new Date())}.csv`;a.click();URL.revokeObjectURL(url);
+}
+
+async function exportToPDF(){
+    try{
+        if(!window.jspdf?.jsPDF)throw new Error('PDF library not loaded.');
+        const table=document.querySelector('.admin-table');if(!table){alert('No data to export');return;}
+        const { jsPDF } = window.jspdf; const pdf=new jsPDF('landscape','mm','a4');
+        pdf.autoTable({html:table,startY:18,margin:{left:8,right:8},styles:{fontSize:7,cellPadding:2},headStyles:{fillColor:[0,77,153]},theme:'grid'});
+        pdf.setFontSize(10);pdf.text('TSTA Student Records - '+new Date().toLocaleDateString(),8,10);
+        pdf.save(`TSTA_${document.getElementById('filterTab').value}_Export_${formatDateInput(new Date())}.pdf`);
+    }catch(e){console.error(e);alert('Error exporting PDF: '+e.message);}
+}
+
+function formatDisplayDate(value){
+    if(!value)return 'N/A';const d=value instanceof Date?value:new Date(value);
+    return isNaN(d.getTime())?'N/A':d.toLocaleDateString();
+}
+function sanitizeFilename(value){return String(value||'Student').replace(/[<>:"/\\|?*\x00-\x1F]/g,'_').replace(/\s+/g,'_').slice(0,80);}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function escapeAttr(value){return escapeHtml(value);}
+
+toggleFormMode();
+document.addEventListener('click',e=>{
+    if(!e.target.closest('#filterName')&&!e.target.closest('#searchSuggestions'))document.getElementById('searchSuggestions').classList.add('hidden');
+});
 </script>
 </body>
 </html>
