@@ -767,31 +767,29 @@
             document.getElementById('loginMsg').innerText = 'Incorrect password!';
         }
     }
-    
-    async function loadStats() {
+        async function loadStats() {
         try {
             const response = await fetch(`${SCRIPT_URL}?action=getStats`);
             const text = await response.text();
+            let stats;
+            try { stats = JSON.parse(text); } catch(e) { throw new Error('Invalid JSON'); }
+
+            // Smart check: handle both raw numbers and wrapped objects
+            let total = 0, gen = 0, tis = 0, tic = 0;
             
-            try {
-                const stats = JSON.parse(text);
-                document.getElementById('totalCount').textContent = stats.total || 0;
-                document.getElementById('generalCount').textContent = stats.TISA_General || 0;
-                document.getElementById('tisCount').textContent = stats.TechInSchools || 0;
-                document.getElementById('ticCount').textContent = stats.TechInChurches || 0;
-            } catch (e) {
-                console.error('Stats parse error:', e, 'Response:', text);
-                document.getElementById('totalCount').textContent = '0';
-                document.getElementById('generalCount').textContent = '0';
-                document.getElementById('tisCount').textContent = '0';
-                document.getElementById('ticCount').textContent = '0';
+            if (stats.total !== undefined) {
+                total = stats.total; gen = stats.TISA_General; tis = stats.TechInSchools; tic = stats.TechInChurches;
+            } else if (Array.isArray(stats)) {
+                // Fallback if script returns raw array of counts
+                total = stats[0] || 0; gen = stats[1] || 0; tis = stats[2] || 0; tic = stats[3] || 0;
             }
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('generalCount').textContent = gen;
+            document.getElementById('tisCount').textContent = tis;
+            document.getElementById('ticCount').textContent = tic;
         } catch (error) {
             console.error('Error loading stats:', error);
-            document.getElementById('totalCount').textContent = '0';
-            document.getElementById('generalCount').textContent = '0';
-            document.getElementById('tisCount').textContent = '0';
-            document.getElementById('ticCount').textContent = '0';
         }
     }
 
@@ -802,37 +800,40 @@
         const toDate = document.getElementById('filterToDate').value;
         
         try {
-            const url = `${SCRIPT_URL}?action=getStudents&tab=${tab}`;
-            const response = await fetch(url);
+            const response = await fetch(`${SCRIPT_URL}?action=getStudents&tab=${tab}`);
             const text = await response.text();
-            
-            try {
-                const result = JSON.parse(text);
+            let result;
+            try { result = JSON.parse(text); } catch(e) { throw new Error('Invalid JSON'); }
+
+            // SMART FIX: Accept raw arrays OR wrapped objects
+            let studentsList = [];
+            if (Array.isArray(result)) {
+                studentsList = result; 
+            } else if (result.status === 'success' && result.data) {
+                studentsList = result.data; 
+            } else if (result.data && Array.isArray(result.data)) {
+                studentsList = result.data;
+            }
+
+            if (studentsList.length > 0) {
+                allStudentsData = studentsList; // This will now be greater than 0!
+                let filteredData = studentsList;
                 
-                if (result.status === 'success') {
-                    allStudentsData = result.data;
-                    
-                    let filteredData = result.data;
-                    if (fromDate || toDate) {
-                        filteredData = result.data.filter(s => {
-                            const regDate = new Date(s.Timestamp);
-                            const from = fromDate ? new Date(fromDate) : new Date('1900-01-01');
-                            const to = toDate ? new Date(toDate) : new Date('2100-12-31');
-                            return regDate >= from && regDate <= to;
-                        });
-                    }
-                    
-                    renderTable(filteredData, tab);
-                } else {
-                    throw new Error('Invalid response');
+                if (fromDate || toDate) {
+                    filteredData = studentsList.filter(s => {
+                        const regDate = new Date(s.Timestamp);
+                        const from = fromDate ? new Date(fromDate) : new Date('1900-01-01');
+                        const to = toDate ? new Date(toDate) : new Date('2100-12-31');
+                        return regDate >= from && regDate <= to;
+                    });
                 }
-            } catch (e) {
-                console.error('Parse error:', e, 'Response:', text);
-                document.getElementById('tableContainer').innerHTML = '<p>Error: Invalid data format received from server</p>';
+                renderTable(filteredData, tab);
+            } else {
+                document.getElementById('tableContainer').innerHTML = '<p>No students found.</p>';
             }
         } catch (error) {
             console.error('Load error:', error);
-            document.getElementById('tableContainer').innerHTML = '<p>Error loading data. Please check your internet connection.</p>';
+            document.getElementById('tableContainer').innerHTML = '<p>Error loading data. Check console.</p>';
         }
     }
     
