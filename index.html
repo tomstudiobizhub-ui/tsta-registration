@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TSTA Registration Portal</title>
+    <title>Tomstudio Tech Academy — Student Portal</title>
+    <!-- Tomstudio Tech Academy favicon / browser tab icon -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/tomstudiobizhub-ui/tsta-registration/main/logo.png">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/tomstudiobizhub-ui/tsta-registration/main/logo.png">
     <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://unpkg.com/html2canvas/1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
@@ -712,7 +715,21 @@ async function apiGet(params){
     Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
     const response=await fetch(url.toString(),{cache:'no-store'});
     const text=await response.text();
-    let result; try{result=JSON.parse(text);}catch(e){throw new Error('Server returned invalid JSON.');}
+    let result;
+    try {
+        result = JSON.parse(text);
+    } catch(e) {
+        console.error('TSTA API non-JSON response', {
+            request: url.toString(),
+            httpStatus: response.status,
+            responseUrl: response.url,
+            bodyPreview: text.slice(0, 500)
+        });
+        throw new Error(
+            'The Apps Script endpoint did not return JSON. ' +
+            'Check that the Web App is deployed as a new version with access set to Anyone.'
+        );
+    }
     if(result.status==='error') throw new Error(result.message||'Server error');
     return result;
 }
