@@ -1,7 +1,7 @@
 {
   "name": "Tomstudio Tech Academy Student Portal",
   "short_name": "TSTA Portal",
-  "start_url": "./TSTA_Student_System_v2.html",
+  "start_url": "./TSTA_Student_System_v3.html",
   "display": "standalone",
   "background_color": "#f4f7fb",
   "theme_color": "#0757a6",
